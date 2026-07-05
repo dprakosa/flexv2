@@ -2,42 +2,30 @@
 
 import { create } from "zustand";
 
+import { announce } from "@/components/StatusAnnouncer";
+import { formatTimestamp, tagCaptionChunk } from "@/lib/captions";
 import {
   deriveMeetingSignals,
+  getSignalLabel,
   meetingSignalsEqual,
 } from "@/lib/meeting-signals";
 import {
-  currentThreadsEqual,
-  deriveCurrentThread,
-} from "@/lib/current-thread";
-import {
   formatTranscriptForPrompt,
-  getCatchUpWindow as resolveCatchUpWindow,
   getTranscriptChunksForWindow,
   pruneTranscriptChunks,
   reconcileTranscriptChunk,
   reconcileTranscriptChunks,
   transcriptChunksFromCaptions,
-  type CatchUpWindow,
 } from "@/lib/transcript";
 import type {
   CaptionChunk,
-  CurrentThread,
+  ChatMessage,
   MeetingMode,
   MeetingSignal,
   MeetingSummary,
   TranscriptChunk,
 } from "@/types";
 import { useSettingsStore } from "@/stores/settingsStore";
-
-function refreshCurrentThreadState(
-  transcriptChunks: TranscriptChunk[],
-  playbackTimeSec: number,
-  currentThread: CurrentThread,
-): CurrentThread {
-  const next = deriveCurrentThread(transcriptChunks, playbackTimeSec);
-  return currentThreadsEqual(currentThread, next) ? currentThread : next;
-}
 
 function refreshMeetingSignalsState(
   transcriptChunks: TranscriptChunk[],
@@ -53,25 +41,94 @@ function refreshMeetingSignalsState(
   return meetingSignalsEqual(meetingSignals, next) ? meetingSignals : next;
 }
 
+const MAX_CHAT_MESSAGES = 200;
+const MAX_SIGNAL_POSTS_PER_REFRESH = 3;
+
+function trimChatMessages(chatMessages: ChatMessage[]): ChatMessage[] {
+  return chatMessages.length > MAX_CHAT_MESSAGES
+    ? chatMessages.slice(-MAX_CHAT_MESSAGES)
+    : chatMessages;
+}
+
+// Same identity key dedupeSignals uses internally, so it is stable across
+// the 10s re-derivation and the signal window aging out.
+function signalKey(signal: MeetingSignal): string {
+  return `${signal.type}:${signal.sourceChunkIds[0] ?? signal.timestamp}`;
+}
+
+// Posts newly detected signals into the chat thread exactly once per
+// session. A later confidence upgrade does not repost — anti-spam wins.
+function collectProactiveChatState(
+  meetingSignals: MeetingSignal[],
+  transcriptChunks: TranscriptChunk[],
+  playbackTimeSec: number,
+  chatMessages: ChatMessage[],
+  postedSignalKeys: Record<string, true>,
+) {
+  const fresh = meetingSignals.filter(
+    (signal) => !postedSignalKeys[signalKey(signal)],
+  );
+  if (fresh.length === 0) {
+    return { chatMessages, postedSignalKeys };
+  }
+
+  const nextKeys: Record<string, true> = { ...postedSignalKeys };
+  for (const signal of fresh) {
+    nextKeys[signalKey(signal)] = true;
+  }
+
+  // Cap posts per refresh so a mid-session name change can't dump a
+  // backlog into the chat; the overflow is marked posted silently.
+  const toPost = [...fresh]
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .slice(-MAX_SIGNAL_POSTS_PER_REFRESH);
+
+  const additions: ChatMessage[] = toPost.map((signal) => ({
+    id: `signal:${signalKey(signal)}`,
+    kind: "signal",
+    signal,
+    // Snapshot the quote now — the source chunk gets pruned later.
+    sourceText: transcriptChunks.find(
+      (chunk) => chunk.id === signal.sourceChunkIds[0],
+    )?.text,
+    atSec: playbackTimeSec,
+  }));
+
+  return {
+    chatMessages: trimChatMessages([...chatMessages, ...additions]),
+    postedSignalKeys: nextKeys,
+  };
+}
+
+type DerivedMeetingState = Pick<
+  CaptionState,
+  "meetingSignals" | "chatMessages" | "postedSignalKeys"
+>;
+
 function refreshDerivedMeetingState(
   transcriptChunks: TranscriptChunk[],
   playbackTimeSec: number,
-  currentThread: CurrentThread,
-  meetingSignals: MeetingSignal[],
+  state: DerivedMeetingState,
 ) {
+  const meetingSignals = refreshMeetingSignalsState(
+    transcriptChunks,
+    playbackTimeSec,
+    state.meetingSignals,
+  );
+
   return {
-    currentThread: refreshCurrentThreadState(
-      transcriptChunks,
-      playbackTimeSec,
-      currentThread,
-    ),
-    meetingSignals: refreshMeetingSignalsState(
-      transcriptChunks,
-      playbackTimeSec,
+    meetingSignals,
+    ...collectProactiveChatState(
       meetingSignals,
+      transcriptChunks,
+      playbackTimeSec,
+      state.chatMessages,
+      state.postedSignalKeys,
     ),
   };
 }
+
+type LineAsk = { text: string; timestamp: number; nonce: number };
 
 type CaptionState = {
   mode: MeetingMode;
@@ -79,9 +136,10 @@ type CaptionState = {
   isDemoMode: boolean;
   captions: CaptionChunk[];
   transcriptChunks: TranscriptChunk[];
-  currentThread: CurrentThread;
   meetingSignals: MeetingSignal[];
-  lostMarkerTimestamp: number | null;
+  chatMessages: ChatMessage[];
+  postedSignalKeys: Record<string, true>;
+  lineAsk: LineAsk | null;
   summary: MeetingSummary | null;
   playbackTimeSec: number;
   sessionStartedAtMs: number | null;
@@ -92,9 +150,6 @@ type CaptionState = {
   setCaptions: (captions: CaptionChunk[]) => void;
   upsertTranscriptChunk: (chunk: TranscriptChunk) => void;
   setTranscriptChunks: (chunks: TranscriptChunk[]) => void;
-  markLost: (timestamp?: number) => void;
-  clearLostMarker: () => void;
-  getCatchUpWindow: () => CatchUpWindow;
   getTranscriptChunksForWindow: (
     fromTimestamp: number,
     toTimestamp: number,
@@ -104,6 +159,9 @@ type CaptionState = {
     toTimestamp: number,
   ) => string;
   refreshMeetingSignals: () => void;
+  appendChatMessage: (message: ChatMessage) => void;
+  requestLineAsk: (text: string, timestamp: number) => void;
+  consumeLineAsk: () => void;
   setSummary: (summary: MeetingSummary | null) => void;
   setPlaybackTimeSec: (playbackTimeSec: number) => void;
   setSessionStartedAtMs: (sessionStartedAtMs: number | null) => void;
@@ -116,9 +174,10 @@ const INITIAL_STATE = {
   isDemoMode: false,
   captions: [] as CaptionChunk[],
   transcriptChunks: [] as TranscriptChunk[],
-  currentThread: {} as CurrentThread,
   meetingSignals: [] as MeetingSignal[],
-  lostMarkerTimestamp: null as number | null,
+  chatMessages: [] as ChatMessage[],
+  postedSignalKeys: {} as Record<string, true>,
+  lineAsk: null as LineAsk | null,
   summary: null as MeetingSummary | null,
   playbackTimeSec: 0,
   sessionStartedAtMs: null as number | null,
@@ -129,8 +188,9 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
   setMode: (mode) => set({ mode }),
   setIsCapturing: (isCapturing) => set({ isCapturing }),
   setIsDemoMode: (isDemoMode) => set({ isDemoMode }),
-  addCaption: (chunk) =>
+  addCaption: (incoming) =>
     set((state) => {
+      const chunk = tagCaptionChunk(incoming);
       const transcriptChunks = reconcileTranscriptChunk(
         state.transcriptChunks,
         {
@@ -144,7 +204,6 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
       const nextTranscriptChunks = pruneTranscriptChunks(
         transcriptChunks,
         state.playbackTimeSec,
-        state.lostMarkerTimestamp,
       );
 
       return {
@@ -153,17 +212,16 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
         ...refreshDerivedMeetingState(
           nextTranscriptChunks,
           state.playbackTimeSec,
-          state.currentThread,
-          state.meetingSignals,
+          state,
         ),
       };
     }),
-  setCaptions: (captions) =>
+  setCaptions: (incoming) =>
     set((state) => {
+      const captions = incoming.map(tagCaptionChunk);
       const nextTranscriptChunks = pruneTranscriptChunks(
         transcriptChunksFromCaptions(captions),
         state.playbackTimeSec,
-        state.lostMarkerTimestamp,
       );
 
       return {
@@ -172,8 +230,7 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
         ...refreshDerivedMeetingState(
           nextTranscriptChunks,
           state.playbackTimeSec,
-          state.currentThread,
-          state.meetingSignals,
+          state,
         ),
       };
     }),
@@ -182,7 +239,6 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
       const nextTranscriptChunks = pruneTranscriptChunks(
         reconcileTranscriptChunk(state.transcriptChunks, chunk),
         state.playbackTimeSec,
-        state.lostMarkerTimestamp,
       );
 
       if (!chunk.isFinal) {
@@ -194,8 +250,7 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
         ...refreshDerivedMeetingState(
           nextTranscriptChunks,
           state.playbackTimeSec,
-          state.currentThread,
-          state.meetingSignals,
+          state,
         ),
       };
     }),
@@ -204,7 +259,6 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
       const nextTranscriptChunks = pruneTranscriptChunks(
         reconcileTranscriptChunks([], chunks),
         state.playbackTimeSec,
-        state.lostMarkerTimestamp,
       );
 
       return {
@@ -212,35 +266,10 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
         ...refreshDerivedMeetingState(
           nextTranscriptChunks,
           state.playbackTimeSec,
-          state.currentThread,
-          state.meetingSignals,
+          state,
         ),
       };
     }),
-  markLost: (timestamp) =>
-    set((state) => ({
-      lostMarkerTimestamp:
-        timestamp ??
-        (state.sessionStartedAtMs === null
-          ? state.playbackTimeSec
-          : (Date.now() - state.sessionStartedAtMs) / 1000),
-    })),
-  clearLostMarker: () =>
-    set((state) => ({
-      lostMarkerTimestamp: null,
-      transcriptChunks: pruneTranscriptChunks(
-        state.transcriptChunks,
-        state.playbackTimeSec,
-        null,
-      ),
-    })),
-  getCatchUpWindow: () => {
-    const state = get();
-    return resolveCatchUpWindow(
-      state.playbackTimeSec,
-      state.lostMarkerTimestamp,
-    );
-  },
   getTranscriptChunksForWindow: (fromTimestamp, toTimestamp) => {
     const state = get();
     return getTranscriptChunksForWindow(
@@ -260,20 +289,41 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
     );
   },
   refreshMeetingSignals: () =>
-    set((state) => ({
-      meetingSignals: refreshMeetingSignalsState(
+    set((state) => {
+      const meetingSignals = refreshMeetingSignalsState(
         state.transcriptChunks,
         state.playbackTimeSec,
         state.meetingSignals,
-      ),
+      );
+
+      return {
+        meetingSignals,
+        ...collectProactiveChatState(
+          meetingSignals,
+          state.transcriptChunks,
+          state.playbackTimeSec,
+          state.chatMessages,
+          state.postedSignalKeys,
+        ),
+      };
+    }),
+  appendChatMessage: (message) =>
+    set((state) => ({
+      chatMessages: trimChatMessages([...state.chatMessages, message]),
     })),
+  // Bridge from a tapped caption line to the chat panel; nonce lets the
+  // same line re-fire. ChatPanel consumes it when it isn't busy.
+  requestLineAsk: (text, timestamp) =>
+    set((state) => ({
+      lineAsk: { text, timestamp, nonce: (state.lineAsk?.nonce ?? 0) + 1 },
+    })),
+  consumeLineAsk: () => set({ lineAsk: null }),
   setSummary: (summary) => set({ summary }),
   setPlaybackTimeSec: (playbackTimeSec) =>
     set((state) => {
       const nextTranscriptChunks = pruneTranscriptChunks(
         state.transcriptChunks,
         playbackTimeSec,
-        state.lostMarkerTimestamp,
       );
 
       // Derived state only ages out on 180s windows, so recomputing it on
@@ -290,8 +340,7 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
           ? refreshDerivedMeetingState(
               nextTranscriptChunks,
               playbackTimeSec,
-              state.currentThread,
-              state.meetingSignals,
+              state,
             )
           : {}),
       };
@@ -306,4 +355,21 @@ useSettingsStore.subscribe((state, prevState) => {
   if (state.userName !== prevState.userName) {
     useCaptionStore.getState().refreshMeetingSignals();
   }
+});
+
+// Announce proactively posted signal cards once, from the store, so the
+// heads-up doesn't depend on the chat panel being mounted. Message content
+// itself is read by the chat's role="log" region.
+useCaptionStore.subscribe((state, prevState) => {
+  if (state.chatMessages === prevState.chatMessages) return;
+
+  const newSignals = state.chatMessages
+    .slice(prevState.chatMessages.length)
+    .filter((message) => message.kind === "signal");
+  const latest = newSignals.at(-1);
+  if (!latest) return;
+
+  announce(
+    `Heads up: ${getSignalLabel(latest.signal).toLowerCase()} at ${formatTimestamp(latest.signal.timestamp)}`,
+  );
 });

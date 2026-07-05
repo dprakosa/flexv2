@@ -12,7 +12,11 @@ export const ASK_PROMPT_KEYS: AskPromptKey[] = [
   "tasks_for_me",
   "explain",
   "suggest_question",
+  "custom",
+  "line_context",
 ];
+
+export const ASK_QUESTION_MAX_LENGTH = 300;
 
 // Strict structured-output schema; snippet modeled as a null union.
 export const ASK_ANSWER_SCHEMA = {
@@ -53,12 +57,28 @@ function transcriptLines(transcript: string): string[] {
   return transcript.split("\n").map(stripOffsets).filter(Boolean);
 }
 
+const QUESTION_STOPWORDS = new Set([
+  "a", "an", "and", "are", "at", "be", "did", "do", "does", "for", "how",
+  "i", "in", "is", "it", "me", "of", "on", "or", "our", "the", "this",
+  "to", "was", "we", "what", "when", "where", "which", "who", "why",
+  "will", "with", "you",
+]);
+
+function contentTokens(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((token) => token.length > 1 && !QUESTION_STOPWORDS.has(token));
+}
+
 // Deterministic fallback used when no OpenAI key is configured.
 export function buildSampleAskAnswer(
   promptKey: AskPromptKey,
   transcript: string,
   term?: string,
   userName?: string,
+  question?: string,
 ): AskResponse {
   const lines = transcriptLines(transcript);
 
@@ -132,6 +152,46 @@ export function buildSampleAskAnswer(
             answer:
               'You could ask: "Could someone recap where we landed just now?"',
           };
+    }
+    case "custom": {
+      const tokens = contentTokens(question ?? "");
+      if (!tokens.length) {
+        return {
+          answer:
+            "I couldn't find an answer to that in the last few minutes.",
+        };
+      }
+      const minScore = tokens.length <= 3 ? 1 : 2;
+      let best: { line: string; score: number } | null = null;
+      for (const line of lines) {
+        const lower = line.toLowerCase();
+        const score = tokens.filter((token) => lower.includes(token)).length;
+        if (score >= minScore && score >= (best?.score ?? 0)) {
+          best = { line, score };
+        }
+      }
+      return best
+        ? {
+            answer: `From the meeting: "${best.line}". That's the closest match to your question.`,
+            snippet: best.line,
+          }
+        : {
+            answer:
+              "That hasn't come up in the last few minutes of the meeting.",
+          };
+    }
+    case "line_context": {
+      const line = question?.trim();
+      if (!line) {
+        return {
+          answer:
+            "I couldn't find that line in the last few minutes of the meeting.",
+        };
+      }
+      return {
+        answer: `In plain terms: the group is working through this point right now. You could ask: "Could you say that more simply?"`,
+        snippet: line,
+      };
     }
   }
 }

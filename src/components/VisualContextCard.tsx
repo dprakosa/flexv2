@@ -10,19 +10,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MIN_TOPIC_CHARS_FOR_SEARCH } from "@/lib/visual-context";
+import {
+  MIN_TOPIC_CHARS_FOR_SEARCH,
+  deriveCurrentTopic,
+} from "@/lib/visual-context";
 import { useCaptionStore } from "@/stores/captionStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { VisualContextResponse, VisualContextResult } from "@/types";
+
+// How often to re-check the transcript for a new topic. There's no
+// reactive "current topic" field in the store (removed with current-thread.ts),
+// so this polls transcriptChunks imperatively rather than subscribing to it
+// directly — transcriptChunks gets a new array reference on every 500ms
+// playback tick, which would otherwise re-run this on every tick too.
+const TOPIC_CHECK_INTERVAL_MS = 4_000;
 
 // Heuristic only, no AI check: shows the top SerpAPI image result for the
 // current topic verbatim. Renders nothing while there's no topic or no
 // result — there's no relevance filter, so an unrelated image can surface.
 export function VisualContextCard() {
   const mode = useCaptionStore((state) => state.mode);
-  const currentTopic = useCaptionStore(
-    (state) => state.currentThread.currentTopic,
-  );
   const reduceCognitiveLoad = useSettingsStore(
     (state) => state.reduceCognitiveLoad,
   );
@@ -38,35 +45,47 @@ export function VisualContextCard() {
   }, [mode]);
 
   useEffect(() => {
-    if (reduceCognitiveLoad) return;
-    if (mode === "idle") return;
-    if (!currentTopic || currentTopic.length < MIN_TOPIC_CHARS_FOR_SEARCH) return;
-    if (currentTopic === lastQueriedTopic.current) return;
+    if (reduceCognitiveLoad || mode === "idle") return;
 
-    lastQueriedTopic.current = currentTopic;
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    const checkTopic = () => {
+      const { transcriptChunks, playbackTimeSec } = useCaptionStore.getState();
+      const topic = deriveCurrentTopic(transcriptChunks, playbackTimeSec);
 
-    void (async () => {
-      try {
-        const response = await fetch("/api/visual-context", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic: currentTopic }),
-          signal: controller.signal,
-        });
-        if (!response.ok) return;
-
-        const data = (await response.json()) as VisualContextResponse;
-        if (!controller.signal.aborted) setResult(data.result);
-      } catch {
-        // Aborted or network failure — stay silent rather than show an error.
+      if (
+        !topic ||
+        topic.length < MIN_TOPIC_CHARS_FOR_SEARCH ||
+        topic === lastQueriedTopic.current
+      ) {
+        return;
       }
-    })();
 
-    return () => controller.abort();
-  }, [currentTopic, mode, reduceCognitiveLoad]);
+      lastQueriedTopic.current = topic;
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      void (async () => {
+        try {
+          const response = await fetch("/api/visual-context", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic }),
+            signal: controller.signal,
+          });
+          if (!response.ok) return;
+
+          const data = (await response.json()) as VisualContextResponse;
+          if (!controller.signal.aborted) setResult(data.result);
+        } catch {
+          // Aborted or network failure — stay silent rather than show an error.
+        }
+      })();
+    };
+
+    checkTopic();
+    const interval = setInterval(checkTopic, TOPIC_CHECK_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [mode, reduceCognitiveLoad]);
 
   if (!result || mode === "idle") return null;
 

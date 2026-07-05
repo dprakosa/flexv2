@@ -11,7 +11,8 @@ Design principles (in priority order):
 1. **One decision at a time.** The screen never asks the user to choose between more than ~3 things.
 2. **Large targets.** Primary actions are full pill buttons (48px+ tall), reachable without precision.
 3. **Calm, not surveillance.** Neutral palette, soft borders, no red recording aesthetics. Status is a quiet pulsing dot, not a banner.
-4. **Recovery in under 10 seconds** (PDD success criterion). "I'm lost" is always one click or one keystroke away.
+4. **Recovery in under 10 seconds** (PDD success criterion). "Catch me up" is always one click or one keystroke away.
+5. **Accessible by default.** The app serves users with cognitive disabilities and ADHD: no italics anywhere, no color-only meaning, high text contrast (secondary text ≥7:1 where possible), no decorative fluff.
 
 ## 2. Platform architecture (Electron)
 
@@ -22,7 +23,7 @@ Design principles (in priority order):
 │  • setDisplayMediaRequestHandler               │
 │      → desktopCapturer picks primary screen    │
 │      → audio: 'loopback' (win/mac), none linux │
-│  • globalShortcut Ctrl/Cmd+Shift+L → "lost"    │
+│  • globalShortcut Ctrl/Cmd+Shift+L → catch up  │
 │  • utilityProcess.fork(Next standalone server) │
 │      → http://127.0.0.1:<free port>            │
 └──────────────┬─────────────────────────────────┘
@@ -45,41 +46,39 @@ Design principles (in priority order):
 
 ## 3. Screen anatomy
 
-One window, two columns at desktop width (single stacked column below `lg`). Meeting information lives in visible cards, not hidden panels.
+One window, two panes at desktop width (single stacked column below `lg`). Layout is Cluely-inspired: captions left, orientation + chat right. Visual identity is the **Clay design system** (getdesign.md/clay) — cream canvas, near-black ink, hairline borders, saturated accents used sparingly.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
 │  ● Listening      Catch-Up Companion         🧍  📌  ⋯      │  header (56px)
 ├────────────────────────────────────────────────────────────┤
-│                                                            │
-│  ┌────────────── summary (blue) ─────────┐ ┌─ ask (violet)┐│
-│  │ plain-language meeting summary,       │ │ What did I   ││
-│  │ full width — room to breathe          │ │ miss? · What ││
-│  └───────────────────────────────────────┘ │ are we decid…││
-│                                            │ + inline     ││
-│  ┌──────────── live captions ────────────┐ │ answers      ││
-│  │  (neutral hero, internal scroll)      │ └──────────────┘│
-│  │                                       │ ┌─ tasks (green)┐
-│  │  …caption lines, generous leading…    │ │ • Sarah → API ││
-│  │                                       │ │   fix  0:15   ││
-│  └───────────────────────────────────────┘ └──────────────┘│
-│                                                            │
-│           ╭──────────────────────────────────╮             │
-│           │ ⚑ I'm lost    ✦ Catch me up      │             │  floating bar
-│           ╰──────────────────────────────────╯             │  bottom-6
+│  ┌──── live captions  ● Decision ● Action ┐ ┌─ ask ───────┐│
+│  │  (neutral hero, internal scroll)       │ │ flat chat:  ││
+│  │  0:42  colored+bold decision line      │ │ ● auto notes││
+│  │  1:20  normal line          Ask →      │ │ user bubbles││
+│  │  1:35  colored+bold action line        │ │ plain       ││
+│  │                                        │ │ answers     ││
+│  │  every line tappable → explanation     │ │ + quotes    ││
+│  │  lands in the chat        (↓ Latest)   │ │ (3 pills)   ││
+│  │                                        │ │ [composer]➤ ││
+│  └────────────────────────────────────────┘ └─────────────┘│
+│           ╭────────────────╮                               │
+│           │ ✦ Catch me up  │  floating bar, bottom-6       │
+│           ╰────────────────╯                               │
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Section color identity** — each card carries a quiet accent (4px left border + tinted icon + colored heading; 6–8% background wash except high-contrast, which keeps pure black surfaces). Color is never the only differentiator (icon + heading text always present). AA-checked per theme:
+**Section color identity** — color appears as quiet accents (small-caps labels, colored meaning lines), never as boxes around content. Accents are AA-safe darkened takes on the Clay brand hues. Color is never the only differentiator: meaning lines are also **semibold** and decoded by the `● Decision ● Action` legend in the captions header (plus sr-only prefixes); auto notes always carry label text + timestamps. AA-checked per theme (3 themes — the dyslexia *font* is now a separate setting):
 
-| Section | calm-light | calm-dark | high-contrast | dyslexia |
-|---|---|---|---|---|
-| Summary (blue) | `#1d4ed8` | `#93c5fd` | `#7dd3fc` | `#1d4ed8` |
-| Current thread (teal) | `#0f766e` | `#5eead4` | `#5eead4` | `#0f766e` |
-| Do I need to do anything (green, = caption-action) | `#047857` | `#a6e3a1` | `#00e676` | `#56650a` |
-| Ask the meeting (violet, = caption-decision) | `#7c3aed` | `#cba6f7` | `#ff9df2` | `#4f55a7` |
+| Accent | calm-light | calm-dark | high-contrast |
+|---|---|---|---|
+| Caption: decision (lavender) | `#5b46b4` | `#b8a4ed` | `#ff9df2` |
+| Caption: action (green) | `#0f6a4e` | `#a4d4c5` | `#00e676` |
+| Ask heading (lavender) | `#5b46b4` | `#b8a4ed` | `#c4b5fd` |
+| Auto notes: tasks/questions (ochre) | `#8a6612` | `#e8b94a` | `#00e676` |
+| Auto notes: mentions (pink) | `#c2185b` | `#ff7fae` | `#ff9df2` |
 
-Live captions stay neutral — the hero stays calm; color lives on the satellites. Rail order: Current thread → Do I need to do anything → Ask the meeting; the Summary card renders only when a summary exists (demo mode today). On mobile the captions column stacks before the rail.
+Meaning lives **in** the transcript: decision/action lines render in color + semibold (heuristically tagged for live sessions via `tagCaptionChunk` in `lib/captions.ts`; demo flags pass through). **Every caption line is tappable** — hover/focus shows a wash + "Ask →", and the tap sends the line to the chat (`line_context` prompt) for a plain-language explanation with context, tone, and a suggested follow-up. The right pane is the **Ask the meeting** chat alone, a flat `bg-card` surface. On mobile the captions column stacks before the chat, which keeps a `55dvh` floor. The demo summary paragraph has no UI (the `summary` store field remains for future `/api/summary` wiring).
 
 ### Header
 - Left: status — pulsing green dot + "Listening" while capturing; "Demo" badge in demo mode; nothing when idle.
@@ -87,26 +86,28 @@ Live captions stay neutral — the hero stays calm; color lives on the satellite
 - Right: the **hero pill** plus utilities:
   - Idle → `[ 🖥 Start listening ]` — primary, size `xl`, the only prominent control on screen.
   - Capturing → same pill becomes `[ ■ Stop ]` (destructive variant).
-  - `🧍` accessibility icon → right-side **Accessibility** sheet: your name (for mention detection), app-wide theme (calm light / calm dark / high contrast / dyslexia-friendly), text size, caption comfort controls. Nothing else lives here — it exists to demonstrate accessibility support.
+  - `🧍` accessibility icon → right-side **Accessibility** sheet, decomposed like standard website a11y tooling into **You** (name for mention detection), **Display** (Color theme: calm light / calm dark / high contrast · Font: standard / dyslexia-friendly · Text size · Line spacing) and **Captions** (reading level, calmer captions). Font and color are independent controls; there is no caption-delay setting.
   - `📌` pin icon (desktop only) → always-on-top toggle, tooltip "Keep on top".
   - `⋯` overflow menu → Use microphone only (PDD's mic-first path), Demo mode, Upload recording.
 
 ### Main grid
-- Max width `72rem`, centered; `lg` two columns (`1fr / 360px` rail), stacked below.
-- Left: Summary (blue, full width — room to breathe) above the captions hero (neutral, internal scroll).
-- Right rail: **Ask the meeting** (violet) and **Action items** (green) — visible, not hidden in panels; rail scrolls independently at `lg`.
+- Max width `72rem`, centered; `lg` two columns (`1fr / 360–420px` rail), stacked below.
+- Left: the captions hero (neutral, internal scroll) with tappable, meaning-colored lines.
+- Right rail: the **Ask the meeting** chat panel alone (`flex-1`, internal scroll, composer pinned at the bottom).
 - Bottom padding clears the floating bar; on mobile the page scrolls and captions keep a `45dvh` floor.
 
-### Ask the meeting (issue #8)
-- Five constrained prompts, never a chatbot: **What did I miss?** (opens the Catch-me-up dialog — one recovery flow, no duplicate answers), **What are we deciding?**, **Do I need to do anything?**, **Explain this simply** (inline term input; empty = latest confusing phrase), **What question should I ask?**.
-- Answers: 1–3 plain sentences from the last 3 minutes of transcript + a verbatim source snippet; skeleton while loading; retry on error; "Sample" badge without an API key. `/api/ask` mirrors `/api/missed` (Responses API, strict schema, deterministic fallback).
+### Ask the meeting — chat panel
+- A running conversation for the session, stored as `chatMessages` in `captionStore` (user bubbles, plain answers, flat auto notes, error lines with retry; capped at 200, cleared on session reset).
+- **Flat output — no card-over-card**: the user's ink bubble is the only filled element; answers are plain left-aligned text with the transcript quote as an indented muted line (regular weight, never italic); auto notes are just a colored small-caps label line (`● MENTION · 1:20`) + the quote — no confidence hints, no redundant sentence (the label word "POSSIBLE" carries the uncertainty). Messages separate by whitespace (`space-y-5`), not boxes.
+- **Quick asks** (`QuickAsks.tsx`) — exactly three, each saving real typing for someone who lost the thread: **Catch me up** (opens the recap dialog), **What are we deciding?**, **What should I ask?**. They render as large stacked **starter buttons** in the empty chat and collapse to one **slim pill row** above the composer once any message exists. ("Anything for me to do?" is covered by the auto notes; explaining a term is just typed into the composer.)
+- **Free-text composer**: sends `promptKey: "custom"` to `/api/ask` (question ≤300 chars, transcript-grounded guardrails, deterministic keyword-match fallback without an API key). Input stays enabled while an answer loads so focus survives.
+- **Proactive auto notes**: mentions/tasks/questions detected for the user auto-append into the thread as they're derived — deduped for the whole session by `type:sourceChunkId`, max 3 per refresh, source quote snapshotted at post time; announced via the aria-live announcer.
+- Answers: 1–3 plain sentences from the last 3 minutes of transcript + a verbatim source snippet; skeleton while loading (outside the `role="log"` region so screen readers hear each completed message exactly once); "Sample" badge without an API key.
+- Auto-scroll follows new messages only while the reader is near the bottom (or just sent a question).
 
 ### Floating control bar
-- `fixed bottom-6`, centered, `w-fit`, `rounded-full`, `bg-background/80 backdrop-blur`, soft shadow.
-- Two `xl` pills:
-  - **⚑ I'm lost** — primary. Click = timestamp marked, no dialog, no interruption. Also fired by global shortcut `Ctrl/Cmd+Shift+L` even when the window is unfocused.
-  - **✦ Catch me up** — secondary. Opens the recap dialog.
-- When a marker exists, a **lost-marker pill** appears between them: `⚑ Lost at 2:34 ✕` — the ✕ clears it. This replaces the old tiny footer text.
+- `fixed bottom-6`, centered, `w-fit`, `rounded-full`, solid `bg-card` + hairline border (no blur, no heavy shadow).
+- One `xl` pill: **✦ Catch me up** — primary. One tap opens the recap dialog (keyboard: **C**; desktop global shortcut `Ctrl/Cmd+Shift+L` also opens it, even unfocused). The lost-marker two-step (mark now, recap later) was removed as too opaque — recovery is a single action.
 - Disabled state (idle): the bar stays visible but muted, teaching the layout before the meeting starts.
 
 ## 4. Catch-me-up dialog
@@ -119,10 +120,7 @@ The recovery moment — it must feel instant and structured.
 │  Get a short recap of what you missed.    │
 │                                           │
 │  ┌─────────────────────────────────────┐  │
-│  │ ⚑  Since I got lost      (at 2:34) │  │  primary, only if marker
-│  └─────────────────────────────────────┘  │
-│  ┌─────────────────────────────────────┐  │
-│  │ ◷  Last 2 minutes                   │  │  outline
+│  │ ◷  Last 2 minutes                   │  │  primary, autofocused
 │  └─────────────────────────────────────┘  │
 │  ┌─────────────────────────────────────┐  │
 │  │ ◷  Last 90 seconds                  │  │  outline
@@ -133,31 +131,30 @@ The recovery moment — it must feel instant and structured.
 │  error    → "Couldn't build your recap." │
 │             [ Try again ]                 │
 │  success  → recap in rounded muted card  │
-│             + action items w/ badges     │
 ╰───────────────────────────────────────────╯
 ```
 
-- Window choices are **full-width stacked `xl` buttons** — big targets, one glance.
-- "Since I got lost" leads and is the primary variant when a marker exists; the marker time is its sublabel.
+- Window choices are **full-width stacked `xl` buttons** — big targets, one glance; "Last 2 minutes" is primary and autofocused.
 - Loading is skeleton lines, never bare "Generating…" text. Errors are friendly and retryable (last request is remembered).
-- Result copy stays short, specific, cautious ("Possible task", never invented certainty) per PDD.
+- Result copy stays short, specific, cautious ("Possible task", never invented certainty) per PDD. No italics in the recap.
 
 ## 5. Visual language
 
 | Token | Choice |
 |---|---|
-| Radius | Pills (`rounded-full`) for actions; `rounded-2xl` for surfaces; base `--radius` may bump to 0.75rem |
-| Palette | Neutral oklch base + four quiet section hues (blue/teal/green/violet, AA per theme); single green status dot |
-| Buttons | New `xl` (h-12, rounded-full, px-6, text-base) and `icon-xl` sizes in `ui/button.tsx` |
-| Icons | lucide-react, 20px in `xl` buttons: `ScreenShare`, `Square`, `Flag`, `Sparkles`, `Pin`, `Settings2`, `X` |
-| Depth | Soft borders + `shadow-sm`/`shadow-lg`; blur on the floating bar; no hard elevation |
+| Radius | Pills (`rounded-full`) for actions/chips; `rounded-2xl` for surfaces; base `--radius` = 0.75rem (Clay: 12px buttons/inputs, ~17px cards, ~22px panels) |
+| Palette | Clay (getdesign.md/clay): cream canvas `#fffaf0`, **white panels `#ffffff`** for clear plane separation, ink `#0a0a0a` primary, warm hairline `#ddd6c6`, secondary text `#525252` (≈7.5:1); accents teal/lavender/ochre/pink (AA per theme). calm-dark = Clay-dark: teal-tinted near-black `#0a1a1a`/`#16282a`, cream ink `#f5f0e0`, pastel accents, borders at 20% white. high-contrast/dyslexia keep their accessibility palettes |
+| Buttons | Large touch targets (WCAG 2.5.8-friendly): `default` h-10, `sm` h-9, `lg` h-11, `xl` h-12 pill; icons `size-10`+; inputs/selects h-10. Quick-ask pills = `outline sm rounded-full` |
+| Icons | lucide-react, 20px in `xl` buttons: `ScreenShare`, `Square`, `Sparkles`, `Pin`, `Settings2`, `X`, `Send`, `ArrowDown` |
+| Depth | Hairline borders + tinted washes; no glassmorphism, no blur, no heavy shadows (Clay: depth from color contrast, not elevation) |
 | Motion | `tw-animate-css` / Radix data-state only — fades and gentle slide for dialog/sheet; pulsing dot; no framer-motion |
-| Type | Existing Geist sans; captions get relaxed line-height; no new fonts |
+| Type | Existing Geist sans (Inter-class, close to Clay's stack); OpenDyslexic available via the Font setting (`data-font`); reading surfaces use `leading-(--app-leading)` driven by the Line-spacing setting (`data-line-spacing`); **no italics anywhere** (dyslexia/cognitive readability) |
 
 ## 6. Interaction details
 
 - **One-click start**: `Start listening` → main process auto-selects the primary screen; no source picker (X11; Wayland may show a one-time system consent).
-- **Keyboard**: `Ctrl/Cmd+Shift+L` = I'm lost (global, works unfocused). Dialog inherits Radix focus handling; all controls reachable by tab.
+- **Keyboard**: **C** opens Catch me up in-app; `Ctrl/Cmd+Shift+L` (global, works unfocused) also opens it on desktop. Dialog inherits Radix focus handling; all controls reachable by tab.
+- **Live captions behavior**: auto-follow the newest line; scrolling up pauses following and shows a `↓ Latest` pill to jump back. Timestamps sit in a fixed left gutter (small, tabular). Decision/action lines render in color + semibold, decoded by the header legend and sr-only prefixes — never color alone. The newest neutral caption renders full-strength; older lines are slightly quieter (still ≥4.5:1). **Tap any line** (click/tap/Enter — hover/focus reveals "Ask →") to get a plain-language explanation of it in the chat via the `line_context` prompt (meaning, context, tone, one follow-up question).
 - **Graceful degradation** (web): picker appears on start; pin/shortcut/settings-desktop rows hidden; everything else identical.
 - **No-audio hint** (Linux): small muted badge near the status dot — "Screen only, no system audio" — informative, not alarming.
 - **Stop** always fully tears down: stream tracks, session clock, transcript state.

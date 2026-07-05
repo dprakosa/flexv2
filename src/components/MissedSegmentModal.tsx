@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Flag, History, RefreshCw } from "lucide-react";
+import { History, RefreshCw } from "lucide-react";
 
 import { CatchUpCardView } from "@/components/CatchUpCardView";
 import { announce } from "@/components/StatusAnnouncer";
@@ -15,7 +15,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatTimestamp } from "@/lib/captions";
 import { useCaptionStore } from "@/stores/captionStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { MissedSegmentResponse } from "@/types";
@@ -28,32 +27,24 @@ type MissedSegmentModalProps = {
 type RecapWindow = {
   fromTimestamp: number;
   toTimestamp: number;
-  usesLostMarker?: boolean;
 };
 
 export function MissedSegmentModal({
   open,
   onOpenChange,
 }: MissedSegmentModalProps) {
-  const lostMarkerTimestamp = useCaptionStore(
-    (state) => state.lostMarkerTimestamp,
-  );
-  const getCatchUpWindow = useCaptionStore((state) => state.getCatchUpWindow);
   const getTranscriptTextForWindow = useCaptionStore(
     (state) => state.getTranscriptTextForWindow,
   );
-  const clearLostMarker = useCaptionStore((state) => state.clearLostMarker);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MissedSegmentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastRequest, setLastRequest] = useState<RecapWindow | null>(null);
-  const [markerCleared, setMarkerCleared] = useState(false);
 
   const requestRecap = async (window: RecapWindow) => {
     setLoading(true);
     setError(null);
     setResult(null);
-    setMarkerCleared(false);
     setLastRequest(window);
     announce("Building your recap");
 
@@ -72,7 +63,6 @@ export function MissedSegmentModal({
           toTimestamp: window.toTimestamp,
           transcript,
           userName: userName || undefined,
-          usesLostMarker: Boolean(window.usesLostMarker),
         }),
       });
 
@@ -82,29 +72,13 @@ export function MissedSegmentModal({
 
       const data = (await response.json()) as MissedSegmentResponse;
       setResult(data);
-
-      if (window.usesLostMarker) {
-        clearLostMarker();
-        setMarkerCleared(true);
-        announce("Recap ready. Lost marker cleared.");
-      } else {
-        announce("Recap ready");
-      }
+      announce("Recap ready");
     } catch {
       setError("Couldn't build your recap.");
       announce("Couldn't build your recap");
     } finally {
       setLoading(false);
     }
-  };
-
-  const requestLostRecap = () => {
-    const window = getCatchUpWindow();
-    void requestRecap({
-      fromTimestamp: window.fromTimestamp,
-      toTimestamp: window.toTimestamp,
-      usesLostMarker: true,
-    });
   };
 
   const requestRecentRecap = (windowSec: number) => {
@@ -126,26 +100,11 @@ export function MissedSegmentModal({
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          {lostMarkerTimestamp !== null && (
-            <Button
-              size="xl"
-              className="w-full justify-start"
-              disabled={loading}
-              autoFocus
-              onClick={requestLostRecap}
-            >
-              <Flag aria-hidden />
-              Since I got lost
-              <span className="ml-auto text-sm opacity-70">
-                at {formatTimestamp(lostMarkerTimestamp)}
-              </span>
-            </Button>
-          )}
           <Button
             size="xl"
-            variant="outline"
             className="w-full justify-start"
             disabled={loading}
+            autoFocus
             onClick={() => requestRecentRecap(120)}
           >
             <History aria-hidden />
@@ -189,12 +148,7 @@ export function MissedSegmentModal({
         )}
 
         {result && !loading && (
-          <CatchUpCardView
-            card={result.card}
-            sample={result.sample}
-            usedLostMarker={lastRequest?.usesLostMarker}
-            markerCleared={markerCleared}
-          />
+          <CatchUpCardView card={result.card} sample={result.sample} />
         )}
       </DialogContent>
     </Dialog>

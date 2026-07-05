@@ -2,18 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Flag, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
-import { DoINeedToDoAnythingPanel } from "@/components/DoINeedToDoAnythingPanel";
-import { AskTheMeeting } from "@/components/AskTheMeeting";
 import { CaptionDisplay } from "@/components/CaptionDisplay";
-import { CurrentThreadPanel } from "@/components/CurrentThreadPanel";
-import { LostMarkerPill } from "@/components/LostMarkerPill";
+import { ChatPanel } from "@/components/ChatPanel";
 import { MeetingHeader } from "@/components/MeetingHeader";
 import { MissedSegmentModal } from "@/components/MissedSegmentModal";
 import { SettingsSheet } from "@/components/SettingsSheet";
 import { announce } from "@/components/StatusAnnouncer";
-import { SummaryPanel } from "@/components/SummaryPanel";
 import { VisualContextCard } from "@/components/VisualContextCard";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,24 +22,10 @@ import {
   getDemoCaptionsUpTo,
   runDemoPlayback,
 } from "@/lib/demo";
-import { formatTimestamp } from "@/lib/captions";
-import { isDesktop, onMarkLost } from "@/lib/desktop";
+import { onMarkLost } from "@/lib/desktop";
 import { useAudioCapture } from "@/hooks/useAudioCapture";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useCaptionStore } from "@/stores/captionStore";
-
-function markLostAndAnnounce() {
-  const store = useCaptionStore.getState();
-  if (store.mode === "idle") return;
-
-  store.markLost();
-  const timestamp = useCaptionStore.getState().lostMarkerTimestamp;
-  announce(
-    timestamp === null
-      ? "Lost marker set"
-      : `Lost marker set at ${formatTimestamp(timestamp)}`,
-  );
-}
 
 export function MeetingCopilot() {
   const [missedOpen, setMissedOpen] = useState(false);
@@ -54,9 +36,6 @@ export function MeetingCopilot() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const mode = useCaptionStore((state) => state.mode);
-  const lostMarkerTimestamp = useCaptionStore(
-    (state) => state.lostMarkerTimestamp,
-  );
   const reset = useCaptionStore((state) => state.reset);
   const setMode = useCaptionStore((state) => state.setMode);
   const setIsCapturing = useCaptionStore((state) => state.setIsCapturing);
@@ -122,12 +101,15 @@ export function MeetingCopilot() {
     };
   }, []);
 
-  // Global shortcut (Ctrl/Cmd+Shift+L) from the desktop shell.
+  // Global shortcut (Ctrl/Cmd+Shift+L) from the desktop shell now opens
+  // the catch-up dialog — the lost-marker step is gone.
   useEffect(() => {
-    return onMarkLost(markLostAndAnnounce);
+    return onMarkLost(() => {
+      if (useCaptionStore.getState().mode !== "idle") setMissedOpen(true);
+    });
   }, []);
 
-  // In-app keyboard shortcuts: L marks lost; C opens catch-up.
+  // In-app keyboard shortcut: C opens catch-up.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.repeat || event.defaultPrevented) return;
@@ -143,17 +125,6 @@ export function MeetingCopilot() {
 
       const sessionActive = useCaptionStore.getState().mode !== "idle";
       const key = event.key.toLowerCase();
-
-      if (key === "l") {
-        const plainL = !event.ctrlKey && !event.metaKey && !event.altKey;
-        const comboL =
-          event.ctrlKey && event.shiftKey && !event.metaKey && !isDesktop();
-        if (!plainL && !comboL) return;
-
-        event.preventDefault();
-        markLostAndAnnounce();
-        return;
-      }
 
       if (key === "c" && sessionActive) {
         if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -288,23 +259,20 @@ export function MeetingCopilot() {
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto grid w-full max-w-6xl min-h-0 flex-1 grid-cols-1 content-start gap-4 overflow-y-auto px-4 pt-2 pb-32 sm:pb-28 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:content-stretch lg:overflow-hidden"
+        className="mx-auto grid w-full max-w-6xl min-h-0 flex-1 grid-cols-1 content-start gap-4 overflow-y-auto px-4 pt-2 pb-24 sm:pb-20 lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] lg:content-stretch lg:overflow-hidden"
       >
         <aside
           aria-label="Meeting orientation"
-          className="order-2 flex flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1"
+          className="order-2 flex flex-col gap-4 lg:min-h-0"
         >
-          <CurrentThreadPanel />
-          <DoINeedToDoAnythingPanel />
           <VisualContextCard />
-          <AskTheMeeting onOpenCatchUp={() => setMissedOpen(true)} />
+          <ChatPanel onOpenCatchUp={() => setMissedOpen(true)} />
         </aside>
 
         <div className="order-1 flex flex-col gap-4 lg:min-h-0">
-          <SummaryPanel />
           <CaptionDisplay />
           {demoEnded && (
-            <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4 text-card-foreground shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4 text-card-foreground sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm">
                 Demo finished. You can start listening or replay the demo.
               </p>
@@ -324,32 +292,12 @@ export function MeetingCopilot() {
       <div
         role="toolbar"
         aria-label="Meeting recovery controls"
-        className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit max-w-[calc(100vw-1.5rem)] flex-wrap items-center justify-center gap-2 rounded-full border bg-background/90 p-2 shadow-lg backdrop-blur sm:bottom-6"
+        className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit max-w-[calc(100vw-1.5rem)] flex-wrap items-center justify-center gap-2 rounded-full border bg-card p-2 sm:bottom-6"
       >
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               size="xl"
-              variant={lostMarkerTimestamp === null ? "default" : "secondary"}
-              disabled={!sessionActive}
-              aria-pressed={lostMarkerTimestamp !== null}
-              aria-keyshortcuts="l"
-              onClick={markLostAndAnnounce}
-            >
-              <Flag aria-hidden />
-              I&apos;m lost
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            Mark where you lost the thread (keyboard: L)
-          </TooltipContent>
-        </Tooltip>
-        <LostMarkerPill />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="xl"
-              variant={lostMarkerTimestamp === null ? "secondary" : "default"}
               disabled={!sessionActive}
               aria-keyshortcuts="c"
               onClick={() => setMissedOpen(true)}
@@ -359,7 +307,7 @@ export function MeetingCopilot() {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            Short recap since you were lost (keyboard: C)
+            Short recap of the last few minutes (keyboard: C)
           </TooltipContent>
         </Tooltip>
       </div>

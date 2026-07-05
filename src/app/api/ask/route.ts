@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import {
   ASK_ANSWER_SCHEMA,
   ASK_PROMPT_KEYS,
+  ASK_QUESTION_MAX_LENGTH,
   buildSampleAskAnswer,
   normalizeAskResponse,
 } from "@/lib/ask";
@@ -36,8 +37,22 @@ export async function POST(request: Request) {
   const transcript =
     typeof body.transcript === "string" ? body.transcript.trim() : "";
   const term = typeof body.term === "string" ? body.term.trim() : "";
+  const question =
+    typeof body.question === "string" ? body.question.trim() : "";
   const userName =
     typeof body.userName === "string" ? body.userName.trim() : "";
+
+  if (
+    (body.promptKey === "custom" || body.promptKey === "line_context") &&
+    (!question || question.length > ASK_QUESTION_MAX_LENGTH)
+  ) {
+    return NextResponse.json(
+      {
+        error: `question is required for ${body.promptKey} asks (max ${ASK_QUESTION_MAX_LENGTH} chars)`,
+      },
+      { status: 400 },
+    );
+  }
   const signals = Array.isArray(body.signals)
     ? body.signals
         .filter((signal): signal is string => typeof signal === "string")
@@ -54,7 +69,13 @@ export async function POST(request: Request) {
 
   if (!isOpenAiConfigured()) {
     const response: AskResponse = {
-      ...buildSampleAskAnswer(body.promptKey, transcript, term, userName),
+      ...buildSampleAskAnswer(
+        body.promptKey,
+        transcript,
+        term,
+        userName,
+        question,
+      ),
       sample: true,
     };
     return NextResponse.json(response);
@@ -65,7 +86,7 @@ export async function POST(request: Request) {
   try {
     const result = await getClient().responses.create({
       model,
-      instructions: buildAskInstructions(body.promptKey, userName, term),
+      instructions: buildAskInstructions(body.promptKey, userName, term, question),
       input: buildAskInput(transcript, signals),
       ...(model.startsWith("gpt-5")
         ? { reasoning: { effort: "minimal" as const } }

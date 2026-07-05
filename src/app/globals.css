@@ -39,8 +39,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --color-section-summary: var(--section-summary);
-  --color-section-summary-tint: var(--section-summary-tint);
+  --color-section-mention: var(--section-mention);
+  --color-section-mention-tint: var(--section-mention-tint);
   --color-section-tasks: var(--section-tasks);
   --color-section-tasks-tint: var(--section-tasks-tint);
   --color-section-ask: var(--section-ask);
@@ -58,99 +58,107 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* calm-light = Clay identity (getdesign.md/clay): cream canvas, near-black
+   ink, hairline borders, saturated accents used sparingly. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.49 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --background: #fffaf0;
+  --foreground: #0a0a0a;
+  /* White panels on the cream canvas: clear plane separation without
+     shadows. Secondary text and hairlines darkened for contrast. */
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --primary: #0a0a0a;
+  --primary-foreground: #ffffff;
+  --secondary: #faf5e8;
+  --secondary-foreground: #1a1a1a;
+  --muted: #faf5e8;
+  --muted-foreground: #525252;
+  --accent: #faf5e8;
+  --accent-foreground: #0a0a0a;
+  --destructive: #ef4444;
+  --border: #ddd6c6;
+  --input: #ddd6c6;
+  --ring: #1a3a3a;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.75rem;
+  --sidebar: #faf5e8;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #0a0a0a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f0e0;
+  --sidebar-accent-foreground: #0a0a0a;
+  --sidebar-border: #ddd6c6;
+  --sidebar-ring: #1a3a3a;
   /* Caption semantic colors (AA on this theme's background). */
-  --caption-decision: #7c3aed;
-  --caption-action: #047857;
-  /* Section identity: accent (border/icon/heading, AA on card) + tint (card wash). */
-  --section-summary: #1d4ed8;
-  --section-summary-tint: color-mix(in oklab, #1d4ed8 7%, var(--card));
-  --section-tasks: #047857;
-  --section-tasks-tint: color-mix(in oklab, #047857 7%, var(--card));
-  --section-ask: #7c3aed;
-  --section-ask-tint: color-mix(in oklab, #7c3aed 7%, var(--card));
-  --section-thread: #0f766e;
-  --section-thread-tint: color-mix(in oklab, #0f766e 7%, var(--card));
-  --section-visual: #b45309;
-  --section-visual-tint: color-mix(in oklab, #b45309 7%, var(--card));
+  --caption-decision: #5b46b4;
+  --caption-action: #0f6a4e;
+  /* Section identity: accent (border/icon/heading, AA on card) + tint
+     (card wash). Accents are darkened same-hue takes on the Clay brand
+     colors; tints wash the true brand hex into the card. */
+  --section-thread: #1a3a3a;
+  --section-thread-tint: color-mix(in oklab, #a4d4c5 22%, var(--card));
+  --section-ask: #5b46b4;
+  --section-ask-tint: color-mix(in oklab, #b8a4ed 16%, var(--card));
+  --section-tasks: #8a6612;
+  --section-tasks-tint: color-mix(in oklab, #e8b94a 16%, var(--card));
+  --section-mention: #c2185b;
+  --section-mention-tint: color-mix(in oklab, #ff4d8b 10%, var(--card));
+  --section-visual: #b8460e;
+  --section-visual-tint: color-mix(in oklab, #ffb066 18%, var(--card));
 }
 
+/* calm-dark = Clay-dark: teal-tinted near-black surfaces, cream ink,
+   the light Clay pastels as accents. */
 .dark {
-  --caption-decision: #cba6f7;
-  --caption-action: #a6e3a1;
-  --section-summary: #93c5fd;
-  --section-summary-tint: color-mix(in oklab, #93c5fd 8%, var(--card));
-  --section-tasks: #a6e3a1;
-  --section-tasks-tint: color-mix(in oklab, #a6e3a1 8%, var(--card));
-  --section-ask: #cba6f7;
-  --section-ask-tint: color-mix(in oklab, #cba6f7 8%, var(--card));
-  --section-thread: #5eead4;
-  --section-thread-tint: color-mix(in oklab, #5eead4 8%, var(--card));
-  --section-visual: #fdba74;
-  --section-visual-tint: color-mix(in oklab, #fdba74 8%, var(--card));
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --caption-decision: #b8a4ed;
+  --caption-action: #a4d4c5;
+  --section-thread: #a4d4c5;
+  --section-thread-tint: color-mix(in oklab, #a4d4c5 12%, var(--card));
+  --section-ask: #b8a4ed;
+  --section-ask-tint: color-mix(in oklab, #b8a4ed 12%, var(--card));
+  --section-tasks: #e8b94a;
+  --section-tasks-tint: color-mix(in oklab, #e8b94a 12%, var(--card));
+  --section-mention: #ff7fae;
+  --section-mention-tint: color-mix(in oklab, #ff4d8b 12%, var(--card));
+  --section-visual: #ffb066;
+  --section-visual-tint: color-mix(in oklab, #ffb066 12%, var(--card));
+  --background: #0a1a1a;
+  --foreground: #f5f0e0;
+  --card: #16282a;
+  --card-foreground: #f5f0e0;
+  --popover: #16282a;
+  --popover-foreground: #f5f0e0;
+  --primary: #f5f0e0;
+  --primary-foreground: #0a1a1a;
+  --secondary: #22383a;
+  --secondary-foreground: #f5f0e0;
+  --muted: #22383a;
+  --muted-foreground: #b3c6c1;
+  --accent: #22383a;
+  --accent-foreground: #f5f0e0;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: oklch(1 0 0 / 20%);
+  --input: oklch(1 0 0 / 24%);
+  --ring: #a4d4c5;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: #16282a;
+  --sidebar-foreground: #f5f0e0;
+  --sidebar-primary: #a4d4c5;
+  --sidebar-primary-foreground: #0a1a1a;
+  --sidebar-accent: #22383a;
+  --sidebar-accent-foreground: #f5f0e0;
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: #a4d4c5;
 }
 
 /* Theme presets set via data-theme on <html> (see ThemeApplier).
@@ -178,54 +186,36 @@ html[data-theme="high-contrast"] {
   --caption-decision: #ff9df2;
   --caption-action: #00e676;
   /* No tint in high contrast: pure black surfaces stay pure black. */
-  --section-summary: #7dd3fc;
-  --section-summary-tint: var(--card);
   --section-tasks: #00e676;
   --section-tasks-tint: var(--card);
-  --section-ask: #ff9df2;
+  --section-ask: #c4b5fd;
   --section-ask-tint: var(--card);
   --section-thread: #5eead4;
   --section-thread-tint: var(--card);
-  --section-visual: #ffb74d;
+  --section-mention: #ff9df2;
+  --section-mention-tint: var(--card);
+  --section-visual: #ffa726;
   --section-visual-tint: var(--card);
 }
 
-html[data-theme="dyslexia"] {
-  --background: #fdf6e3;
-  --foreground: #333333;
-  --card: #fffcf2;
-  --card-foreground: #333333;
-  --popover: #fffcf2;
-  --popover-foreground: #333333;
-  --primary: #40382a;
-  --primary-foreground: #fdf6e3;
-  --secondary: #f1e9d2;
-  --secondary-foreground: #333333;
-  --muted: #f1e9d2;
-  --muted-foreground: #55503f;
-  --accent: #f1e9d2;
-  --accent-foreground: #333333;
-  --border: #e3d9bc;
-  --input: #e3d9bc;
-  --ring: #a89e80;
-  --caption-decision: #4f55a7;
-  --caption-action: #56650a;
-  --section-summary: #1d4ed8;
-  --section-summary-tint: color-mix(in oklab, #1d4ed8 6%, var(--card));
-  --section-tasks: #56650a;
-  --section-tasks-tint: color-mix(in oklab, #56650a 6%, var(--card));
-  --section-ask: #4f55a7;
-  --section-ask-tint: color-mix(in oklab, #4f55a7 6%, var(--card));
-  --section-thread: #0f766e;
-  --section-thread-tint: color-mix(in oklab, #0f766e 6%, var(--card));
-  --section-visual: #b45309;
-  --section-visual-tint: color-mix(in oklab, #b45309 6%, var(--card));
-}
-
-html[data-theme="dyslexia"] body {
+/* Font choice is independent of the color theme (set via data-font). */
+html[data-font="dyslexia"] body {
   font-family: OpenDyslexic, var(--font-geist-sans), system-ui, sans-serif;
   letter-spacing: 0.05em;
-  line-height: 1.7;
+}
+
+/* Line spacing for reading surfaces (captions, chat) — consumed via
+   leading-(--app-leading) so it wins over utility defaults. */
+:root {
+  --app-leading: 1.625;
+}
+
+html[data-line-spacing="relaxed"] {
+  --app-leading: 1.85;
+}
+
+html[data-line-spacing="loose"] {
+  --app-leading: 2.2;
 }
 
 /* App-wide text scaling; everything downstream is rem-based. */

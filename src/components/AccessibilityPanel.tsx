@@ -12,27 +12,67 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import {
-  CAPTION_DELAY_OPTIONS,
+  FONT_CHOICE_OPTIONS,
+  LINE_SPACING_OPTIONS,
   READING_LEVEL_OPTIONS,
   TEXT_SCALE_OPTIONS,
   THEME_PRESET_OPTIONS,
 } from "@/lib/design-tokens";
 import { useSettingsStore } from "@/stores/settingsStore";
-import type { TextScale, ThemePreset } from "@/types";
+import type {
+  FontChoice,
+  LineSpacing,
+  TextScale,
+  ThemePreset,
+} from "@/types";
+
+function SettingSelect<Value extends string>({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: Value;
+  options: readonly { value: Value; label: string }[];
+  onChange: (value: Value) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Select value={value} onValueChange={(next) => onChange(next as Value)}>
+        <SelectTrigger id={id} className="w-full">
+          <SelectValue placeholder={label} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export function AccessibilityPanel() {
   const {
     userName,
     themePreset,
+    fontChoice,
+    lineSpacing,
     textScale,
     readingLevel,
-    captionDelaySec,
     reduceCognitiveLoad,
     setUserName,
     setThemePreset,
+    setFontChoice,
+    setLineSpacing,
     setTextScale,
     setReadingLevel,
-    setCaptionDelaySec,
     setReduceCognitiveLoad,
   } = useSettingsStore();
 
@@ -43,14 +83,14 @@ export function AccessibilityPanel() {
   return (
     <div className="space-y-6">
       <section
-        aria-labelledby="settings-you-appearance"
+        aria-labelledby="settings-you"
         className="space-y-5 rounded-2xl border p-4"
       >
         <h2
-          id="settings-you-appearance"
+          id="settings-you"
           className="text-sm font-medium uppercase tracking-wide"
         >
-          You &amp; appearance
+          You
         </h2>
 
         <div className="space-y-2">
@@ -66,44 +106,50 @@ export function AccessibilityPanel() {
             Used to spot when you&apos;re mentioned. Stays on this device.
           </p>
         </div>
+      </section>
 
-        <div className="space-y-2">
-          <Label htmlFor="theme-preset">Theme</Label>
-          <Select
-            value={themePreset}
-            onValueChange={(value) => setThemePreset(value as ThemePreset)}
-          >
-            <SelectTrigger id="theme-preset" className="w-full">
-              <SelectValue placeholder="Select theme" />
-            </SelectTrigger>
-            <SelectContent>
-              {THEME_PRESET_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <section
+        aria-labelledby="settings-display"
+        className="space-y-5 rounded-2xl border p-4"
+      >
+        <h2
+          id="settings-display"
+          className="text-sm font-medium uppercase tracking-wide"
+        >
+          Display
+        </h2>
 
-        <div className="space-y-2">
-          <Label htmlFor="text-scale">Text size</Label>
-          <Select
-            value={textScale}
-            onValueChange={(value) => setTextScale(value as TextScale)}
-          >
-            <SelectTrigger id="text-scale" className="w-full">
-              <SelectValue placeholder="Select text size" />
-            </SelectTrigger>
-            <SelectContent>
-              {TEXT_SCALE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <SettingSelect<ThemePreset>
+          id="theme-preset"
+          label="Color theme"
+          value={themePreset}
+          options={THEME_PRESET_OPTIONS}
+          onChange={setThemePreset}
+        />
+
+        <SettingSelect<FontChoice>
+          id="font-choice"
+          label="Font"
+          value={fontChoice}
+          options={FONT_CHOICE_OPTIONS}
+          onChange={setFontChoice}
+        />
+
+        <SettingSelect<TextScale>
+          id="text-scale"
+          label="Text size"
+          value={textScale}
+          options={TEXT_SCALE_OPTIONS}
+          onChange={setTextScale}
+        />
+
+        <SettingSelect<LineSpacing>
+          id="line-spacing"
+          label="Line spacing"
+          value={lineSpacing}
+          options={LINE_SPACING_OPTIONS}
+          onChange={setLineSpacing}
+        />
       </section>
 
       <section
@@ -133,25 +179,6 @@ export function AccessibilityPanel() {
           <p className="text-sm text-muted-foreground">
             {READING_LEVEL_OPTIONS[readingLevelIndex]?.label ?? "Original"}
           </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="caption-delay">Caption delay</Label>
-          <Select
-            value={String(captionDelaySec)}
-            onValueChange={(value) => setCaptionDelaySec(Number(value))}
-          >
-            <SelectTrigger id="caption-delay" className="w-full">
-              <SelectValue placeholder="Select delay" />
-            </SelectTrigger>
-            <SelectContent>
-              {CAPTION_DELAY_OPTIONS.map((seconds) => (
-                <SelectItem key={seconds} value={String(seconds)}>
-                  {seconds === 0 ? "Live (no delay)" : `${seconds} seconds`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="flex items-center justify-between gap-3">
