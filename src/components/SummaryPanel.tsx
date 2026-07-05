@@ -9,14 +9,14 @@ export function SummaryPanel() {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium uppercase tracking-wide">
-          Summary
+        <CardTitle asChild className="text-sm font-medium uppercase tracking-wide">
+          <h2>Summary</h2>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm leading-relaxed text-muted-foreground">
+        <p className="text-sm leading-relaxed">
           {summary?.text ??
-            "A plain-language summary will update every ~30 seconds during the meeting."}
+            "Once you start listening, a plain-language summary of the meeting will appear here."}
         </p>
       </CardContent>
     </Card>

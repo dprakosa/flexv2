@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { StatusAnnouncer } from "@/components/StatusAnnouncer";
+import { ThemeApplier } from "@/components/ThemeApplier";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
@@ -32,6 +34,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <ThemeApplier />
+        <StatusAnnouncer />
         <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>

@@ -74,7 +74,7 @@ One window, one column, three zones. No sidebars.
 - Right: the **hero pill** plus utilities:
   - Idle → `[ 🖥 Start listening ]` — primary, size `xl`, the only prominent control on screen.
   - Capturing → same pill becomes `[ ■ Stop ]` (destructive variant).
-  - `⚙` settings icon → right-side sheet (legacy accessibility panel, action items).
+  - `⚙` settings icon → right-side sheet: your name (for mention detection), app-wide theme (calm light / calm dark / high contrast / dyslexia-friendly), text size, caption controls, action items.
   - `📌` pin icon (desktop only) → always-on-top toggle, tooltip "Keep on top".
   - `⋯` overflow menu → Demo mode, Upload recording (demoted; they're developer/fallback paths).
 

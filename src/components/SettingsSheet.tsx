@@ -22,7 +22,8 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
         <SheetHeader>
           <SheetTitle>Settings</SheetTitle>
           <SheetDescription>
-            Adjust how captions look and review detected tasks.
+            Set your name, adjust how the app looks, and review detected
+            tasks.
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-4 px-4 pb-6">

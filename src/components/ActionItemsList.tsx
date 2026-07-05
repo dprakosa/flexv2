@@ -10,8 +10,8 @@ export function ActionItemsList() {
   return (
     <Card className="min-h-0 flex-1">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium uppercase tracking-wide">
-          Action items
+        <CardTitle asChild className="text-sm font-medium uppercase tracking-wide">
+          <h2>Action items</h2>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -32,7 +32,7 @@ export function ActionItemsList() {
                     </>
                   ) : null}
                   {item.task}
-                  <span className="ml-2 text-xs text-muted-foreground">
+                  <span className="ml-2 text-sm text-muted-foreground">
                     {formatTimestamp(item.timestamp)}
                   </span>
                 </span>

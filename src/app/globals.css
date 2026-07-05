@@ -60,7 +60,7 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.49 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -81,9 +81,14 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Caption semantic colors (AA on this theme's background). */
+  --caption-decision: #7c3aed;
+  --caption-action: #047857;
 }
 
 .dark {
+  --caption-decision: #cba6f7;
+  --caption-action: #a6e3a1;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -117,6 +122,80 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Theme presets set via data-theme on <html> (see ThemeApplier).
+   calm-dark and high-contrast also carry the .dark class so dark: utilities
+   engage; these blocks override the .dark variables where needed. */
+html[data-theme="high-contrast"] {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #000000;
+  --card-foreground: #ffffff;
+  --popover: #000000;
+  --popover-foreground: #ffffff;
+  --primary: #ffd400;
+  --primary-foreground: #000000;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #d4d4d4;
+  --accent: #1a1a1a;
+  --accent-foreground: #ffffff;
+  --destructive: #ff5252;
+  --border: oklch(1 0 0 / 45%);
+  --input: oklch(1 0 0 / 45%);
+  --ring: #ffd400;
+  --caption-decision: #ff9df2;
+  --caption-action: #00e676;
+}
+
+html[data-theme="dyslexia"] {
+  --background: #fdf6e3;
+  --foreground: #333333;
+  --card: #fffcf2;
+  --card-foreground: #333333;
+  --popover: #fffcf2;
+  --popover-foreground: #333333;
+  --primary: #40382a;
+  --primary-foreground: #fdf6e3;
+  --secondary: #f1e9d2;
+  --secondary-foreground: #333333;
+  --muted: #f1e9d2;
+  --muted-foreground: #55503f;
+  --accent: #f1e9d2;
+  --accent-foreground: #333333;
+  --border: #e3d9bc;
+  --input: #e3d9bc;
+  --ring: #a89e80;
+  --caption-decision: #4f55a7;
+  --caption-action: #56650a;
+}
+
+html[data-theme="dyslexia"] body {
+  font-family: OpenDyslexic, var(--font-geist-sans), system-ui, sans-serif;
+  letter-spacing: 0.05em;
+  line-height: 1.7;
+}
+
+/* App-wide text scaling; everything downstream is rem-based. */
+html[data-text-size="large"] {
+  font-size: 112.5%;
+}
+
+html[data-text-size="x-large"] {
+  font-size: 125%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -134,5 +213,17 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: local("OpenDyslexic");
+  src:
+    url("/fonts/OpenDyslexic-Regular.woff2") format("woff2"),
+    local("OpenDyslexic");
+}
+
+@font-face {
+  font-family: OpenDyslexic;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src:
+    url("/fonts/OpenDyslexic-Bold.woff2") format("woff2"),
+    local("OpenDyslexic-Bold");
 }

@@ -9,21 +9,42 @@ import { LostMarkerPill } from "@/components/LostMarkerPill";
 import { MeetingHeader } from "@/components/MeetingHeader";
 import { MissedSegmentModal } from "@/components/MissedSegmentModal";
 import { SettingsSheet } from "@/components/SettingsSheet";
+import { announce } from "@/components/StatusAnnouncer";
 import { SummaryPanel } from "@/components/SummaryPanel";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   DEMO_TRANSCRIPT,
   getDemoActionItemsUpTo,
   getDemoCaptionsUpTo,
   runDemoPlayback,
 } from "@/lib/demo";
-import { onMarkLost } from "@/lib/desktop";
+import { formatTimestamp } from "@/lib/captions";
+import { isDesktop, onMarkLost } from "@/lib/desktop";
 import { useAudioCapture } from "@/hooks/useAudioCapture";
 import { useCaptionStore } from "@/stores/captionStore";
+
+function markLostAndAnnounce() {
+  const store = useCaptionStore.getState();
+  if (store.mode === "idle") return;
+
+  store.markLost();
+  const timestamp = useCaptionStore.getState().lostMarkerTimestamp;
+  announce(
+    timestamp === null
+      ? "Lost marker set"
+      : `Lost marker set at ${formatTimestamp(timestamp)}`,
+  );
+}
 
 export function MeetingCopilot() {
   const [missedOpen, setMissedOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [demoEnded, setDemoEnded] = useState(false);
   const demoAbortRef = useRef<AbortController | null>(null);
   const clockIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,7 +66,6 @@ export function MeetingCopilot() {
   const setSessionStartedAtMs = useCaptionStore(
     (state) => state.setSessionStartedAtMs,
   );
-  const markLost = useCaptionStore((state) => state.markLost);
 
   const { warning, startTabCapture, startFileCapture, stopCapture } =
     useAudioCapture();
@@ -72,11 +92,14 @@ export function MeetingCopilot() {
   };
 
   const stopSession = () => {
+    const wasActive = useCaptionStore.getState().mode !== "idle";
     demoAbortRef.current?.abort();
     demoAbortRef.current = null;
     stopSessionClock();
     stopCapture();
     reset();
+    setDemoEnded(false);
+    if (wasActive) announce("Stopped listening");
   };
 
   useEffect(() => {
@@ -91,13 +114,41 @@ export function MeetingCopilot() {
 
   // Global shortcut (Ctrl/Cmd+Shift+L) from the desktop shell.
   useEffect(() => {
-    return onMarkLost(() => {
-      const state = useCaptionStore.getState();
-      if (state.mode !== "idle") {
-        state.markLost();
-      }
-    });
+    return onMarkLost(markLostAndAnnounce);
   }, []);
+
+  // In-app keyboard shortcut: L (web also gets Ctrl+Shift+L; on desktop the
+  // OS-level shortcut owns that combo).
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat || event.defaultPrevented) return;
+      if (event.key !== "l" && event.key !== "L") return;
+
+      const plainL = !event.ctrlKey && !event.metaKey && !event.altKey;
+      const comboL =
+        event.ctrlKey && event.shiftKey && !event.metaKey && !isDesktop();
+      if (!plainL && !comboL) return;
+
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.closest(
+          "input, textarea, select, [contenteditable=true], [role=dialog]",
+        )
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      markLostAndAnnounce();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (warning) announce(warning);
+  }, [warning]);
 
   const startDemo = async () => {
     stopSession();
@@ -109,6 +160,7 @@ export function MeetingCopilot() {
       updatedAt: Date.now(),
       coversFromTimestamp: 0,
     });
+    announce("Demo started");
 
     const controller = new AbortController();
     demoAbortRef.current = controller;
@@ -120,6 +172,11 @@ export function MeetingCopilot() {
     }, controller.signal);
 
     setIsCapturing(false);
+
+    if (!controller.signal.aborted) {
+      setDemoEnded(true);
+      announce("Demo finished. Start listening or replay the demo.");
+    }
   };
 
   const startLive = async () => {
@@ -131,6 +188,7 @@ export function MeetingCopilot() {
       await startTabCapture();
       setIsCapturing(true);
       startSessionClock();
+      announce("Listening started");
       // Phase 1: connect tab audio stream to STT pipeline.
     } catch {
       setMode("idle");
@@ -187,26 +245,48 @@ export function MeetingCopilot() {
       <main className="mx-auto flex w-full max-w-3xl min-h-0 flex-1 flex-col gap-4 px-4 pt-2 pb-28">
         <SummaryPanel />
         <CaptionDisplay />
+        {demoEnded && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4 text-card-foreground shadow-sm">
+            <p className="text-sm">
+              Demo finished — start listening or replay the demo.
+            </p>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={startLive}>
+                Start listening
+              </Button>
+              <Button size="sm" variant="ghost" onClick={startDemo}>
+                Replay demo
+              </Button>
+            </div>
+          </div>
+        )}
       </main>
 
       <div className="fixed inset-x-0 bottom-6 z-40 mx-auto flex w-fit max-w-[calc(100vw-2rem)] flex-wrap items-center justify-center gap-2 rounded-full border bg-background/80 p-2 shadow-lg backdrop-blur">
-        <Button
-          size="xl"
-          variant={lostMarkerTimestamp === null ? "default" : "secondary"}
-          disabled={!sessionActive}
-          onClick={() => markLost()}
-        >
-          <Flag />
-          I&apos;m lost
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="xl"
+              variant={lostMarkerTimestamp === null ? "default" : "secondary"}
+              disabled={!sessionActive}
+              aria-pressed={lostMarkerTimestamp !== null}
+              aria-keyshortcuts="l"
+              onClick={markLostAndAnnounce}
+            >
+              <Flag aria-hidden />
+              I&apos;m lost
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Mark where you lost the thread (press L)</TooltipContent>
+        </Tooltip>
         <LostMarkerPill />
         <Button
           size="xl"
-          variant="secondary"
+          variant={lostMarkerTimestamp === null ? "secondary" : "default"}
           disabled={!sessionActive}
           onClick={() => setMissedOpen(true)}
         >
-          <Sparkles />
+          <Sparkles aria-hidden />
           Catch me up
         </Button>
       </div>

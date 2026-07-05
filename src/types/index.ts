@@ -1,6 +1,12 @@
 export type ReadingLevel = "original" | "grade8" | "grade6";
 
-export type ContrastPreset = "default" | "high" | "dark-calm" | "dyslexia";
+export type ThemePreset =
+  | "calm-light"
+  | "calm-dark"
+  | "high-contrast"
+  | "dyslexia";
+
+export type TextScale = "default" | "large" | "x-large";
 
 export type MeetingMode = "idle" | "demo" | "live" | "upload";
 
@@ -22,10 +28,11 @@ export type TranscriptChunk = {
 };
 
 export type UserAccessibilitySettings = {
+  userName: string;
+  themePreset: ThemePreset;
+  textScale: TextScale;
   readingLevel: ReadingLevel;
-  fontSize: number;
   captionDelaySec: number;
-  contrastPreset: ContrastPreset;
   reduceCognitiveLoad: boolean;
 };
 
@@ -43,13 +50,33 @@ export type MeetingSummary = {
   coversFromTimestamp: number;
 };
 
+export type MentionStatus =
+  | "clearly_mentioned"
+  | "possibly_mentioned"
+  | "not_mentioned";
+
+export type CatchUpCard = {
+  fromTimestamp: number;
+  toTimestamp: number;
+  currentTopic?: string;
+  whatChanged: string[];
+  decisions: string[];
+  possibleTasksForUser: string[];
+  openQuestions: string[];
+  userMentions: string[];
+  mentionStatus: MentionStatus;
+  suggestedQuestion?: string;
+};
+
 export type MissedSegmentRequest = {
   fromTimestamp: number;
   toTimestamp: number;
   transcript?: string;
+  userName?: string;
+  usesLostMarker?: boolean;
 };
 
 export type MissedSegmentResponse = {
-  recap: string;
-  actionItems: ActionItem[];
+  card: CatchUpCard;
+  sample?: boolean;
 };

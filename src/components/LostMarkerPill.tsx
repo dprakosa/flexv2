@@ -2,6 +2,7 @@
 
 import { Flag, X } from "lucide-react";
 
+import { announce } from "@/components/StatusAnnouncer";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -20,7 +21,7 @@ export function LostMarkerPill() {
   if (lostMarkerTimestamp === null) return null;
 
   return (
-    <span className="flex items-center gap-1 rounded-full bg-muted py-1 pl-3 pr-1 text-sm text-muted-foreground">
+    <span className="flex items-center gap-1 rounded-full bg-muted py-1 pl-3 pr-1 text-sm text-foreground">
       <Flag className="size-3.5" aria-hidden />
       Lost at {formatTimestamp(lostMarkerTimestamp)}
       <Tooltip>
@@ -30,7 +31,10 @@ export function LostMarkerPill() {
             size="icon-sm"
             className="rounded-full"
             aria-label="Clear lost marker"
-            onClick={clearLostMarker}
+            onClick={() => {
+              clearLostMarker();
+              announce("Lost marker cleared");
+            }}
           >
             <X />
           </Button>
