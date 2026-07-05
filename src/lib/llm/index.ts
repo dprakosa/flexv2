@@ -101,6 +101,13 @@ export function buildAskInstructions(
   ].join("\n");
 }
 
-export function buildAskInput(transcript: string) {
-  return `Transcript of the last few minutes of the meeting:\n\n${transcript}`;
+export function buildAskInput(transcript: string, signals?: string[]) {
+  const signalsBlock =
+    signals && signals.length > 0
+      ? `\n\nRecent meeting signals (heuristic, verify against the transcript):\n${signals
+          .map((signal) => `- ${signal}`)
+          .join("\n")}`
+      : "";
+
+  return `Transcript of the last few minutes of the meeting:\n\n${transcript}${signalsBlock}`;
 }

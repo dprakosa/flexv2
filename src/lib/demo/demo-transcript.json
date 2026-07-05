@@ -1,5 +1,5 @@
 {
-  "title": "Sprint Planning — Noisy Remote Call",
+  "title": "Sprint Planning \u2014 Noisy Remote Call",
   "durationSec": 210,
   "summary": "The team is fixing a login bug by Friday. Sarah will work on the API. Marcus will write a document about how sign-in works by Wednesday. The old dashboard stays for now; the new design comes later. Alex will email stakeholders after the meeting.",
   "chunks": [
@@ -19,7 +19,7 @@
     {
       "id": "c3",
       "speaker": "Jordan (Design)",
-      "text": "Sorry, quick question — are we keeping the old dashboard or switching to the new one?",
+      "text": "Sorry, quick question \u2014 are we keeping the old dashboard or switching to the new one?",
       "timestamp": 32
     },
     {
@@ -68,36 +68,6 @@
       "speaker": "Sarah (Dev)",
       "text": "Sounds good. Thanks everyone.",
       "timestamp": 195
-    }
-  ],
-  "actionItems": [
-    {
-      "id": "a1",
-      "assignee": "Sarah",
-      "task": "API fix for login",
-      "timestamp": 15,
-      "sourceCaptionId": "c1"
-    },
-    {
-      "id": "a2",
-      "assignee": "Marcus",
-      "task": "Auth flow documentation by Wednesday",
-      "timestamp": 95,
-      "sourceCaptionId": "c6"
-    },
-    {
-      "id": "a3",
-      "assignee": "Jordan",
-      "task": "Update Figma with v1 dashboard labels",
-      "timestamp": 150,
-      "sourceCaptionId": "c8"
-    },
-    {
-      "id": "a4",
-      "assignee": "Alex",
-      "task": "Send stakeholder email after call",
-      "timestamp": 170,
-      "sourceCaptionId": "c9"
     }
   ]
 }

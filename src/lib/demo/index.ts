@@ -1,10 +1,9 @@
-import type { ActionItem, CaptionChunk } from "@/types";
+import type { CaptionChunk } from "@/types";
 
 export type DemoTranscript = {
   title: string;
   durationSec: number;
   chunks: CaptionChunk[];
-  actionItems: ActionItem[];
   summary: string;
 };
 
@@ -14,12 +13,6 @@ export const DEMO_TRANSCRIPT = demoTranscript as DemoTranscript;
 
 export function getDemoCaptionsUpTo(timeSec: number): CaptionChunk[] {
   return DEMO_TRANSCRIPT.chunks.filter((chunk) => chunk.timestamp <= timeSec);
-}
-
-export function getDemoActionItemsUpTo(timeSec: number): ActionItem[] {
-  return DEMO_TRANSCRIPT.actionItems.filter(
-    (item) => item.timestamp <= timeSec,
-  );
 }
 
 export async function runDemoPlayback(

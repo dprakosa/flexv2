@@ -219,6 +219,23 @@ export function MeetingCopilot() {
     }
   };
 
+  const startMicOnly = async () => {
+    stopSession();
+    setMode("live");
+    setIsDemoMode(false);
+
+    try {
+      const micStream = await startMicFallback({ isFallback: false });
+      setIsCapturing(true);
+      startSessionClock();
+      announce("Listening with your microphone");
+      void transcription.start(micStream);
+    } catch (err) {
+      setMode("idle");
+      if (err instanceof Error && err.message) announce(err.message);
+    }
+  };
+
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
@@ -253,6 +270,7 @@ export function MeetingCopilot() {
         captureWarning={transcription.error ?? warning}
         onStartDemo={startDemo}
         onStartLive={startLive}
+        onStartMicOnly={startMicOnly}
         onStop={stopSession}
         onUpload={handleUploadClick}
         onOpenSettings={() => setSettingsOpen(true)}
@@ -273,14 +291,14 @@ export function MeetingCopilot() {
       >
         <aside
           aria-label="Meeting orientation"
-          className="order-1 flex flex-col gap-4 lg:order-2 lg:min-h-0 lg:overflow-y-auto lg:pr-1"
+          className="order-2 flex flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1"
         >
           <CurrentThreadPanel />
           <DoINeedToDoAnythingPanel />
           <AskTheMeeting onOpenCatchUp={() => setMissedOpen(true)} />
         </aside>
 
-        <div className="order-2 flex flex-col gap-4 lg:order-1 lg:min-h-0">
+        <div className="order-1 flex flex-col gap-4 lg:min-h-0">
           <SummaryPanel />
           <CaptionDisplay />
           {demoEnded && (

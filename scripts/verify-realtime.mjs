@@ -20,8 +20,12 @@ function apiKeyFromEnvFile() {
   try {
     const match = readFileSync(new URL("../.env", import.meta.url), "utf8")
       .split("\n")
+      .map((line) => line.trim().replace(/^export\s+/, ""))
       .find((line) => line.startsWith("OPENAI_API_KEY="));
-    return match?.slice("OPENAI_API_KEY=".length).trim();
+    return match
+      ?.slice("OPENAI_API_KEY=".length)
+      .trim()
+      .replace(/^["']|["']$/g, "");
   } catch {
     return undefined;
   }

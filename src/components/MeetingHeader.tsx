@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import {
+  Mic,
   MonitorPlay,
   MoreHorizontal,
   PersonStanding,
@@ -32,6 +33,7 @@ type MeetingHeaderProps = {
   captureWarning?: string | null;
   onStartDemo: () => void;
   onStartLive: () => void;
+  onStartMicOnly: () => void;
   onStop: () => void;
   onUpload: () => void;
   onOpenSettings: () => void;
@@ -41,6 +43,7 @@ export function MeetingHeader({
   captureWarning,
   onStartDemo,
   onStartLive,
+  onStartMicOnly,
   onStop,
   onUpload,
   onOpenSettings,
@@ -144,6 +147,10 @@ export function MeetingHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={onStartMicOnly}>
+              <Mic />
+              Use microphone only
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={onStartDemo}>
               <MonitorPlay />
               Play demo meeting

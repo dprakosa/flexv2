@@ -38,6 +38,11 @@ export async function POST(request: Request) {
   const term = typeof body.term === "string" ? body.term.trim() : "";
   const userName =
     typeof body.userName === "string" ? body.userName.trim() : "";
+  const signals = Array.isArray(body.signals)
+    ? body.signals
+        .filter((signal): signal is string => typeof signal === "string")
+        .slice(0, 4)
+    : undefined;
 
   if (!transcript) {
     const response: AskResponse = {
@@ -61,7 +66,7 @@ export async function POST(request: Request) {
     const result = await getClient().responses.create({
       model,
       instructions: buildAskInstructions(body.promptKey, userName, term),
-      input: buildAskInput(transcript),
+      input: buildAskInput(transcript, signals),
       ...(model.startsWith("gpt-5")
         ? { reasoning: { effort: "minimal" as const } }
         : {}),

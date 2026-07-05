@@ -75,10 +75,11 @@ One window, two columns at desktop width (single stacked column below `lg`). Mee
 | Section | calm-light | calm-dark | high-contrast | dyslexia |
 |---|---|---|---|---|
 | Summary (blue) | `#1d4ed8` | `#93c5fd` | `#7dd3fc` | `#1d4ed8` |
-| Action items (green, = caption-action) | `#047857` | `#a6e3a1` | `#00e676` | `#56650a` |
+| Current thread (teal) | `#0f766e` | `#5eead4` | `#5eead4` | `#0f766e` |
+| Do I need to do anything (green, = caption-action) | `#047857` | `#a6e3a1` | `#00e676` | `#56650a` |
 | Ask the meeting (violet, = caption-decision) | `#7c3aed` | `#cba6f7` | `#ff9df2` | `#4f55a7` |
 
-Live captions stay neutral — the hero stays calm; color lives on the satellites.
+Live captions stay neutral — the hero stays calm; color lives on the satellites. Rail order: Current thread → Do I need to do anything → Ask the meeting; the Summary card renders only when a summary exists (demo mode today). On mobile the captions column stacks before the rail.
 
 ### Header
 - Left: status — pulsing green dot + "Listening" while capturing; "Demo" badge in demo mode; nothing when idle.
@@ -88,7 +89,7 @@ Live captions stay neutral — the hero stays calm; color lives on the satellite
   - Capturing → same pill becomes `[ ■ Stop ]` (destructive variant).
   - `🧍` accessibility icon → right-side **Accessibility** sheet: your name (for mention detection), app-wide theme (calm light / calm dark / high contrast / dyslexia-friendly), text size, caption comfort controls. Nothing else lives here — it exists to demonstrate accessibility support.
   - `📌` pin icon (desktop only) → always-on-top toggle, tooltip "Keep on top".
-  - `⋯` overflow menu → Demo mode, Upload recording (demoted; they're developer/fallback paths).
+  - `⋯` overflow menu → Use microphone only (PDD's mic-first path), Demo mode, Upload recording.
 
 ### Main grid
 - Max width `72rem`, centered; `lg` two columns (`1fr / 360px` rail), stacked below.
@@ -146,7 +147,7 @@ The recovery moment — it must feel instant and structured.
 | Token | Choice |
 |---|---|
 | Radius | Pills (`rounded-full`) for actions; `rounded-2xl` for surfaces; base `--radius` may bump to 0.75rem |
-| Palette | Neutral oklch base + three quiet section hues (blue/green/violet, AA per theme); single green status dot |
+| Palette | Neutral oklch base + four quiet section hues (blue/teal/green/violet, AA per theme); single green status dot |
 | Buttons | New `xl` (h-12, rounded-full, px-6, text-base) and `icon-xl` sizes in `ui/button.tsx` |
 | Icons | lucide-react, 20px in `xl` buttons: `ScreenShare`, `Square`, `Flag`, `Sparkles`, `Pin`, `Settings2`, `X` |
 | Depth | Soft borders + `shadow-sm`/`shadow-lg`; blur on the floating bar; no hard elevation |

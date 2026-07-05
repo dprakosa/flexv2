@@ -51,14 +51,6 @@ export type UserAccessibilitySettings = {
   reduceCognitiveLoad: boolean;
 };
 
-export type ActionItem = {
-  id: string;
-  assignee?: string;
-  task: string;
-  timestamp: number;
-  sourceCaptionId: string;
-};
-
 export type MeetingSummary = {
   text: string;
   updatedAt: number;
@@ -107,6 +99,7 @@ export type AskRequest = {
   term?: string;
   transcript?: string;
   userName?: string;
+  signals?: string[];
 };
 
 export type AskResponse = {

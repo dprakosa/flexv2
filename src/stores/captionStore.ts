@@ -276,17 +276,34 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
         state.lostMarkerTimestamp,
       );
 
+      // Derived state only ages out on 180s windows, so recomputing it on
+      // every 500ms tick is wasted work (chunk changes refresh immediately
+      // elsewhere). Re-derive at 10s granularity instead.
+      const crossedRefreshBoundary =
+        Math.floor(playbackTimeSec / 10) !==
+        Math.floor(state.playbackTimeSec / 10);
+
       return {
         playbackTimeSec,
         transcriptChunks: nextTranscriptChunks,
-        ...refreshDerivedMeetingState(
-          nextTranscriptChunks,
-          playbackTimeSec,
-          state.currentThread,
-          state.meetingSignals,
-        ),
+        ...(crossedRefreshBoundary
+          ? refreshDerivedMeetingState(
+              nextTranscriptChunks,
+              playbackTimeSec,
+              state.currentThread,
+              state.meetingSignals,
+            )
+          : {}),
       };
     }),
   setSessionStartedAtMs: (sessionStartedAtMs) => set({ sessionStartedAtMs }),
   reset: () => set(INITIAL_STATE),
 }));
+
+// Signals depend on the user's name; re-derive when it changes so the
+// refresh doesn't rely on any particular component staying mounted.
+useSettingsStore.subscribe((state, prevState) => {
+  if (state.userName !== prevState.userName) {
+    useCaptionStore.getState().refreshMeetingSignals();
+  }
+});

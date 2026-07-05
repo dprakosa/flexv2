@@ -6,8 +6,8 @@ A calm, assistive web app for rejoining live meetings when you lose the thread. 
 
 ```bash
 npm install
-cp .env.example .env.local
-# Add your OpenAI API key to .env.local
+cp .env.example .env   # .env.local also works
+# Add your OpenAI API key
 npm run dev
 ```
 
@@ -34,6 +34,18 @@ Keyboard shortcuts during a session: **L** = I'm lost, **C** = Catch me up.
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
 | `npm run start` | Run production build |
+| `npm run dev:desktop` | Electron desktop app against the dev server |
+| `npm run dist` | Package the desktop app (Linux AppImage/deb) |
+| `node scripts/verify-realtime.mjs` | End-to-end realtime transcription check (needs dev server + key) |
+
+## Desktop app
+
+The same app ships as an Electron desktop app that captures the screen and
+system audio for meetings (with a microphone fallback on Linux, where system
+loopback audio isn't available). `npm run dev:desktop` reuses a running dev
+server or starts one. On Ubuntu 24.04+ the packaged AppImage needs
+`--no-sandbox` (or a root-owned `chrome-sandbox`) because unprivileged user
+namespaces are restricted.
 
 ## Environment
 

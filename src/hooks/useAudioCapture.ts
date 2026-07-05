@@ -61,7 +61,7 @@ export function useAudioCapture() {
     }
   }, []);
 
-  const startMicFallback = useCallback(async () => {
+  const startMicFallback = useCallback(async (options?: { isFallback?: boolean }) => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -72,7 +72,9 @@ export function useAudioCapture() {
       });
 
       setMicStream(mediaStream);
-      setWarning("No system audio — using your microphone instead");
+      if (options?.isFallback !== false) {
+        setWarning("No system audio — using your microphone instead");
+      }
       return mediaStream;
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";

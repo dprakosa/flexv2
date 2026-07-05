@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-
 import { UserRoundCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,14 +14,7 @@ export function DoINeedToDoAnythingPanel() {
   const isCapturing = useCaptionStore((state) => state.isCapturing);
   const meetingSignals = useCaptionStore((state) => state.meetingSignals);
   const transcriptChunks = useCaptionStore((state) => state.transcriptChunks);
-  const refreshMeetingSignals = useCaptionStore(
-    (state) => state.refreshMeetingSignals,
-  );
   const userName = useSettingsStore((state) => state.userName);
-
-  useEffect(() => {
-    refreshMeetingSignals();
-  }, [userName, refreshMeetingSignals]);
 
   const sessionActive = mode !== "idle";
   const hasName = userName.trim().length > 0;

@@ -5,7 +5,6 @@ import { useState } from "react";
 import {
   Flag,
   Lightbulb,
-  ListChecks,
   MessageCircleQuestion,
   RefreshCw,
   Scale,
@@ -23,6 +22,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ASK_WINDOW_SEC } from "@/lib/ask";
+import { formatTimestamp } from "@/lib/captions";
+import { getSignalLabel } from "@/lib/meeting-signals";
 import { useCaptionStore } from "@/stores/captionStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { AskPromptKey, AskResponse } from "@/types";
@@ -59,12 +60,18 @@ export function AskTheMeeting({ onOpenCatchUp }: AskTheMeetingProps) {
     setLastAsk(params);
     announce("Thinking about that");
 
-    const { playbackTimeSec } = useCaptionStore.getState();
+    const { playbackTimeSec, meetingSignals } = useCaptionStore.getState();
     const transcript = getTranscriptTextForWindow(
       Math.max(0, playbackTimeSec - ASK_WINDOW_SEC),
       playbackTimeSec,
     );
     const userName = useSettingsStore.getState().userName;
+    const signals = meetingSignals
+      .slice(0, 4)
+      .map(
+        (signal) =>
+          `${getSignalLabel(signal)} (${formatTimestamp(signal.timestamp)}): ${signal.text}`,
+      );
 
     try {
       const response = await fetch("/api/ask", {
@@ -75,6 +82,7 @@ export function AskTheMeeting({ onOpenCatchUp }: AskTheMeetingProps) {
           term: params.term || undefined,
           transcript,
           userName: userName || undefined,
+          signals: signals.length > 0 ? signals : undefined,
         }),
       });
 
@@ -134,15 +142,6 @@ export function AskTheMeeting({ onOpenCatchUp }: AskTheMeetingProps) {
           >
             <Scale aria-hidden />
             What are we deciding?
-          </Button>
-          <Button
-            variant="ghost"
-            className="justify-start rounded-xl"
-            disabled={!sessionActive || loading}
-            onClick={() => void ask({ promptKey: "tasks_for_me" })}
-          >
-            <ListChecks aria-hidden />
-            Do I need to do anything?
           </Button>
           <Button
             variant="ghost"
