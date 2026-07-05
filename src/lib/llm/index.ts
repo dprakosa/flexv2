@@ -68,12 +68,14 @@ const ASK_TASKS: Record<AskPromptKey, string> = {
   explain: "", // built dynamically from the term
   suggest_question:
     "Task: suggest one short, natural question the participant could ask aloud right now to rejoin the conversation.",
+  custom: "", // built dynamically from the free-text question
 };
 
 export function buildAskInstructions(
   promptKey: AskPromptKey,
   userName?: string,
   term?: string,
+  question?: string,
 ) {
   const nameLine = userName?.trim()
     ? `The participant's name is "${userName.trim()}".`
@@ -84,7 +86,9 @@ export function buildAskInstructions(
       ? term?.trim()
         ? `Task: explain "${term.trim()}" simply, as it is used in this meeting.`
         : "Task: find the most likely confusing term, acronym, or phrase in this window and explain it simply."
-      : ASK_TASKS[promptKey];
+      : promptKey === "custom"
+        ? `Task: answer the participant's question: "${question?.trim() ?? ""}". If the transcript window does not contain the answer, say plainly that it has not come up in the last few minutes — never answer from outside knowledge.`
+        : ASK_TASKS[promptKey];
 
   return [
     "You help a meeting participant follow a live meeting. You receive a transcript window; each line starts with a second offset like [95s].",

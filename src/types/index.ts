@@ -80,7 +80,6 @@ export type MissedSegmentRequest = {
   toTimestamp: number;
   transcript?: string;
   userName?: string;
-  usesLostMarker?: boolean;
 };
 
 export type MissedSegmentResponse = {
@@ -92,11 +91,13 @@ export type AskPromptKey =
   | "deciding"
   | "tasks_for_me"
   | "explain"
-  | "suggest_question";
+  | "suggest_question"
+  | "custom";
 
 export type AskRequest = {
   promptKey: AskPromptKey;
   term?: string;
+  question?: string;
   transcript?: string;
   userName?: string;
   signals?: string[];
@@ -107,3 +108,29 @@ export type AskResponse = {
   snippet?: string;
   sample?: boolean;
 };
+
+export type AskParams = {
+  promptKey: AskPromptKey;
+  term?: string;
+  question?: string;
+};
+
+export type ChatMessage =
+  | { id: string; kind: "user"; text: string; ask: AskParams; atSec: number }
+  | {
+      id: string;
+      kind: "answer";
+      answer: string;
+      snippet?: string;
+      sample?: boolean;
+      ask: AskParams;
+      atSec: number;
+    }
+  | { id: string; kind: "error"; text: string; ask: AskParams; atSec: number }
+  | {
+      id: string;
+      kind: "signal";
+      signal: MeetingSignal;
+      sourceText?: string;
+      atSec: number;
+    };

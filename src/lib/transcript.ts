@@ -1,13 +1,6 @@
 import type { CaptionChunk, TranscriptChunk } from "@/types";
 
-export const DEFAULT_CATCH_UP_WINDOW_SEC = 120;
 export const TRANSCRIPT_RETENTION_WINDOW_SEC = 30 * 60;
-
-export type CatchUpWindow = {
-  fromTimestamp: number;
-  toTimestamp: number;
-  usesLostMarker: boolean;
-};
 
 function normalizeTimestamp(timestamp: number): number {
   return Number.isFinite(timestamp) ? Math.max(0, timestamp) : 0;
@@ -75,37 +68,14 @@ export function reconcileTranscriptChunks(
 export function pruneTranscriptChunks(
   chunks: TranscriptChunk[],
   currentTimeSec: number,
-  lostMarkerTimestamp: number | null,
   retentionWindowSec = TRANSCRIPT_RETENTION_WINDOW_SEC,
 ): TranscriptChunk[] {
-  const rollingStart = Math.max(
+  const retainedStart = Math.max(
     0,
     normalizeTimestamp(currentTimeSec) - retentionWindowSec,
   );
-  const retainedStart =
-    lostMarkerTimestamp === null
-      ? rollingStart
-      : Math.min(rollingStart, normalizeTimestamp(lostMarkerTimestamp));
 
   return chunks.filter((chunk) => chunk.timestamp >= retainedStart);
-}
-
-export function getCatchUpWindow(
-  currentTimeSec: number,
-  lostMarkerTimestamp: number | null,
-  fallbackWindowSec = DEFAULT_CATCH_UP_WINDOW_SEC,
-): CatchUpWindow {
-  const toTimestamp = normalizeTimestamp(currentTimeSec);
-  const hasLostMarker = lostMarkerTimestamp !== null;
-  const fromTimestamp = hasLostMarker
-    ? normalizeTimestamp(lostMarkerTimestamp)
-    : Math.max(0, toTimestamp - fallbackWindowSec);
-
-  return {
-    fromTimestamp: Math.min(fromTimestamp, toTimestamp),
-    toTimestamp,
-    usesLostMarker: hasLostMarker,
-  };
 }
 
 export function getTranscriptChunksForWindow(

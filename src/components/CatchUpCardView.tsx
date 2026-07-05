@@ -9,8 +9,6 @@ import type { CatchUpCard } from "@/types";
 type CatchUpCardViewProps = {
   card: CatchUpCard;
   sample?: boolean;
-  usedLostMarker?: boolean;
-  markerCleared?: boolean;
 };
 
 function CardSection({
@@ -37,12 +35,7 @@ function CardSection({
   );
 }
 
-export function CatchUpCardView({
-  card,
-  sample,
-  usedLostMarker,
-  markerCleared,
-}: CatchUpCardViewProps) {
+export function CatchUpCardView({ card, sample }: CatchUpCardViewProps) {
   const regionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,7 +62,6 @@ export function CatchUpCardView({
         <span>
           Covers {formatTimestamp(card.fromTimestamp)} →{" "}
           {formatTimestamp(card.toTimestamp)}
-          {usedLostMarker ? " · since your lost marker" : ""}
         </span>
         {sample && (
           <Badge variant="outline">
@@ -120,18 +112,12 @@ export function CatchUpCardView({
           {card.suggestedQuestion && (
             <section className="space-y-1.5">
               <h3 className="font-medium">Question you could ask</h3>
-              <blockquote className="border-l-2 border-border pl-3 italic">
-                {card.suggestedQuestion}
+              <blockquote className="border-l-2 border-border pl-3">
+                &ldquo;{card.suggestedQuestion}&rdquo;
               </blockquote>
             </section>
           )}
         </>
-      )}
-
-      {markerCleared && (
-        <p className="text-muted-foreground">
-          Marker cleared — you&apos;re caught up.
-        </p>
       )}
     </div>
   );
