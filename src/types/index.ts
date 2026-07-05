@@ -27,6 +27,13 @@ export type TranscriptChunk = {
   isFinal: boolean;
 };
 
+export type CurrentThread = {
+  currentTopic?: string;
+  lastDecision?: string;
+  openQuestion?: string;
+  updatedAt?: number;
+};
+
 export type UserAccessibilitySettings = {
   userName: string;
   themePreset: ThemePreset;

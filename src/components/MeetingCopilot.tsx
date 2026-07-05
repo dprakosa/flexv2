@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { Flag, Sparkles } from "lucide-react";
 
-import { AskTheMeeting } from "@/components/AskTheMeeting";
 import { ActionItemsList } from "@/components/ActionItemsList";
+import { AskTheMeeting } from "@/components/AskTheMeeting";
 import { CaptionDisplay } from "@/components/CaptionDisplay";
+import { CurrentThreadPanel } from "@/components/CurrentThreadPanel";
 import { LostMarkerPill } from "@/components/LostMarkerPill";
 import { MeetingHeader } from "@/components/MeetingHeader";
 import { MissedSegmentModal } from "@/components/MissedSegmentModal";
@@ -282,6 +283,7 @@ export function MeetingCopilot() {
           aria-label="Meeting information"
           className="flex flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1"
         >
+          <CurrentThreadPanel />
           <AskTheMeeting onOpenCatchUp={() => setMissedOpen(true)} />
           <ActionItemsList />
         </aside>

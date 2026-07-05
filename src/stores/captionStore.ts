@@ -3,6 +3,10 @@
 import { create } from "zustand";
 
 import {
+  currentThreadsEqual,
+  deriveCurrentThread,
+} from "@/lib/current-thread";
+import {
   formatTranscriptForPrompt,
   getCatchUpWindow as resolveCatchUpWindow,
   getTranscriptChunksForWindow,
@@ -15,10 +19,20 @@ import {
 import type {
   ActionItem,
   CaptionChunk,
+  CurrentThread,
   MeetingMode,
   MeetingSummary,
   TranscriptChunk,
 } from "@/types";
+
+function refreshCurrentThreadState(
+  transcriptChunks: TranscriptChunk[],
+  playbackTimeSec: number,
+  currentThread: CurrentThread,
+): CurrentThread {
+  const next = deriveCurrentThread(transcriptChunks, playbackTimeSec);
+  return currentThreadsEqual(currentThread, next) ? currentThread : next;
+}
 
 type CaptionState = {
   mode: MeetingMode;
@@ -26,6 +40,7 @@ type CaptionState = {
   isDemoMode: boolean;
   captions: CaptionChunk[];
   transcriptChunks: TranscriptChunk[];
+  currentThread: CurrentThread;
   lostMarkerTimestamp: number | null;
   actionItems: ActionItem[];
   summary: MeetingSummary | null;
@@ -62,6 +77,7 @@ const INITIAL_STATE = {
   isDemoMode: false,
   captions: [] as CaptionChunk[],
   transcriptChunks: [] as TranscriptChunk[],
+  currentThread: {} as CurrentThread,
   lostMarkerTimestamp: null as number | null,
   actionItems: [] as ActionItem[],
   summary: null as MeetingSummary | null,
@@ -86,40 +102,78 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
         },
       );
 
+      const nextTranscriptChunks = pruneTranscriptChunks(
+        transcriptChunks,
+        state.playbackTimeSec,
+        state.lostMarkerTimestamp,
+      );
+
       return {
         captions: [...state.captions, chunk],
-        transcriptChunks: pruneTranscriptChunks(
-          transcriptChunks,
+        transcriptChunks: nextTranscriptChunks,
+        currentThread: refreshCurrentThreadState(
+          nextTranscriptChunks,
           state.playbackTimeSec,
-          state.lostMarkerTimestamp,
+          state.currentThread,
         ),
       };
     }),
   setCaptions: (captions) =>
-    set((state) => ({
-      captions,
-      transcriptChunks: pruneTranscriptChunks(
+    set((state) => {
+      const nextTranscriptChunks = pruneTranscriptChunks(
         transcriptChunksFromCaptions(captions),
         state.playbackTimeSec,
         state.lostMarkerTimestamp,
-      ),
-    })),
+      );
+
+      return {
+        captions,
+        transcriptChunks: nextTranscriptChunks,
+        currentThread: refreshCurrentThreadState(
+          nextTranscriptChunks,
+          state.playbackTimeSec,
+          state.currentThread,
+        ),
+      };
+    }),
   upsertTranscriptChunk: (chunk) =>
-    set((state) => ({
-      transcriptChunks: pruneTranscriptChunks(
+    set((state) => {
+      const nextTranscriptChunks = pruneTranscriptChunks(
         reconcileTranscriptChunk(state.transcriptChunks, chunk),
         state.playbackTimeSec,
         state.lostMarkerTimestamp,
-      ),
-    })),
+      );
+
+      if (!chunk.isFinal) {
+        return { transcriptChunks: nextTranscriptChunks };
+      }
+
+      return {
+        transcriptChunks: nextTranscriptChunks,
+        currentThread: refreshCurrentThreadState(
+          nextTranscriptChunks,
+          state.playbackTimeSec,
+          state.currentThread,
+        ),
+      };
+    }),
   setTranscriptChunks: (chunks) =>
-    set((state) => ({
-      transcriptChunks: pruneTranscriptChunks(
+    set((state) => {
+      const nextTranscriptChunks = pruneTranscriptChunks(
         reconcileTranscriptChunks([], chunks),
         state.playbackTimeSec,
         state.lostMarkerTimestamp,
-      ),
-    })),
+      );
+
+      return {
+        transcriptChunks: nextTranscriptChunks,
+        currentThread: refreshCurrentThreadState(
+          nextTranscriptChunks,
+          state.playbackTimeSec,
+          state.currentThread,
+        ),
+      };
+    }),
   markLost: (timestamp) =>
     set((state) => ({
       lostMarkerTimestamp:
@@ -165,14 +219,23 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
   setActionItems: (actionItems) => set({ actionItems }),
   setSummary: (summary) => set({ summary }),
   setPlaybackTimeSec: (playbackTimeSec) =>
-    set((state) => ({
-      playbackTimeSec,
-      transcriptChunks: pruneTranscriptChunks(
+    set((state) => {
+      const nextTranscriptChunks = pruneTranscriptChunks(
         state.transcriptChunks,
         playbackTimeSec,
         state.lostMarkerTimestamp,
-      ),
-    })),
+      );
+
+      return {
+        playbackTimeSec,
+        transcriptChunks: nextTranscriptChunks,
+        currentThread: refreshCurrentThreadState(
+          nextTranscriptChunks,
+          playbackTimeSec,
+          state.currentThread,
+        ),
+      };
+    }),
   setSessionStartedAtMs: (sessionStartedAtMs) => set({ sessionStartedAtMs }),
   reset: () => set(INITIAL_STATE),
 }));
