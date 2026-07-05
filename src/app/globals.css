@@ -47,6 +47,8 @@
   --color-section-ask-tint: var(--section-ask-tint);
   --color-section-thread: var(--section-thread);
   --color-section-thread-tint: var(--section-thread-tint);
+  --color-section-visual: var(--section-visual);
+  --color-section-visual-tint: var(--section-visual-tint);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -101,6 +103,8 @@
   --section-ask-tint: color-mix(in oklab, #7c3aed 7%, var(--card));
   --section-thread: #0f766e;
   --section-thread-tint: color-mix(in oklab, #0f766e 7%, var(--card));
+  --section-visual: #b45309;
+  --section-visual-tint: color-mix(in oklab, #b45309 7%, var(--card));
 }
 
 .dark {
@@ -114,6 +118,8 @@
   --section-ask-tint: color-mix(in oklab, #cba6f7 8%, var(--card));
   --section-thread: #5eead4;
   --section-thread-tint: color-mix(in oklab, #5eead4 8%, var(--card));
+  --section-visual: #fdba74;
+  --section-visual-tint: color-mix(in oklab, #fdba74 8%, var(--card));
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -180,6 +186,8 @@ html[data-theme="high-contrast"] {
   --section-ask-tint: var(--card);
   --section-thread: #5eead4;
   --section-thread-tint: var(--card);
+  --section-visual: #ffb74d;
+  --section-visual-tint: var(--card);
 }
 
 html[data-theme="dyslexia"] {
@@ -210,6 +218,8 @@ html[data-theme="dyslexia"] {
   --section-ask-tint: color-mix(in oklab, #4f55a7 6%, var(--card));
   --section-thread: #0f766e;
   --section-thread-tint: color-mix(in oklab, #0f766e 6%, var(--card));
+  --section-visual: #b45309;
+  --section-visual-tint: color-mix(in oklab, #b45309 6%, var(--card));
 }
 
 html[data-theme="dyslexia"] body {

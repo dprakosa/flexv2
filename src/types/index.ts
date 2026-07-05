@@ -107,3 +107,19 @@ export type AskResponse = {
   snippet?: string;
   sample?: boolean;
 };
+
+export type VisualContextRequest = {
+  topic: string;
+};
+
+export type VisualContextResult = {
+  query: string;
+  imageUrl: string;
+  sourceUrl: string;
+  caption: string;
+};
+
+export type VisualContextResponse = {
+  result: VisualContextResult | null;
+  sample?: boolean;
+};

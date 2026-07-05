@@ -14,6 +14,7 @@ import { MissedSegmentModal } from "@/components/MissedSegmentModal";
 import { SettingsSheet } from "@/components/SettingsSheet";
 import { announce } from "@/components/StatusAnnouncer";
 import { SummaryPanel } from "@/components/SummaryPanel";
+import { VisualContextCard } from "@/components/VisualContextCard";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -295,6 +296,7 @@ export function MeetingCopilot() {
         >
           <CurrentThreadPanel />
           <DoINeedToDoAnythingPanel />
+          <VisualContextCard />
           <AskTheMeeting onOpenCatchUp={() => setMissedOpen(true)} />
         </aside>
 

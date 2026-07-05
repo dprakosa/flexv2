@@ -14,6 +14,10 @@ export function isOpenAiConfigured(): boolean {
   return Boolean(process.env.OPENAI_API_KEY);
 }
 
+export function isImageSearchConfigured(): boolean {
+  return Boolean(process.env.SERPAPI_API_KEY);
+}
+
 export function buildSimplifyPrompt(text: string, readingLevel: ReadingLevel) {
   const target =
     readingLevel === "grade6"
