@@ -5,7 +5,13 @@ import { useCallback, useEffect, useRef } from "react";
 import { useCaptionStore } from "@/stores/captionStore";
 
 export function useTranscription() {
-  const { isCapturing, mode, addCaption, setIsCapturing } = useCaptionStore();
+  const {
+    isCapturing,
+    mode,
+    addCaption,
+    upsertTranscriptChunk,
+    setIsCapturing,
+  } = useCaptionStore();
   const abortRef = useRef<AbortController | null>(null);
 
   const start = useCallback(async () => {
@@ -34,5 +40,6 @@ export function useTranscription() {
     start,
     stop,
     addCaption,
+    upsertTranscriptChunk,
   };
 }

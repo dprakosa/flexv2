@@ -14,6 +14,13 @@ export type CaptionChunk = {
   isDecision?: boolean;
 };
 
+export type TranscriptChunk = {
+  id: string;
+  text: string;
+  timestamp: number;
+  isFinal: boolean;
+};
+
 export type UserAccessibilitySettings = {
   readingLevel: ReadingLevel;
   fontSize: number;
@@ -39,6 +46,7 @@ export type MeetingSummary = {
 export type MissedSegmentRequest = {
   fromTimestamp: number;
   toTimestamp: number;
+  transcript?: string;
 };
 
 export type MissedSegmentResponse = {

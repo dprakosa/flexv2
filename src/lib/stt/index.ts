@@ -1,14 +1,13 @@
+import type { TranscriptChunk } from "@/types";
+
 export type StreamingSttConfig = {
   apiKey: string;
   model?: string;
   diarize?: boolean;
 };
 
-export type SttTranscriptEvent = {
-  text: string;
+export type SttTranscriptEvent = TranscriptChunk & {
   speaker?: string;
-  timestamp: number;
-  isFinal: boolean;
 };
 
 export function getDeepgramApiKey(): string | undefined {

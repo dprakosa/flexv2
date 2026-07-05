@@ -20,6 +20,13 @@
 # production
 /build
 
+# electron
+/dist-electron
+/release
+
+# playwright mcp session artifacts
+/.playwright-mcp
+
 # misc
 .DS_Store
 *.pem
