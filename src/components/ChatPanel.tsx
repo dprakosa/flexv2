@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { MessageCircleQuestion } from "lucide-react";
 
@@ -9,7 +9,7 @@ import { ChatMessageList } from "@/components/ChatMessageList";
 import { QuickAsks } from "@/components/QuickAsks";
 import { announce } from "@/components/StatusAnnouncer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ASK_WINDOW_SEC } from "@/lib/ask";
+import { ASK_QUESTION_MAX_LENGTH, ASK_WINDOW_SEC } from "@/lib/ask";
 import { formatTimestamp } from "@/lib/captions";
 import { getSignalLabel } from "@/lib/meeting-signals";
 import { useCaptionStore } from "@/stores/captionStore";
@@ -27,6 +27,8 @@ export function ChatPanel({ onOpenCatchUp }: ChatPanelProps) {
   const getTranscriptTextForWindow = useCaptionStore(
     (state) => state.getTranscriptTextForWindow,
   );
+  const lineAsk = useCaptionStore((state) => state.lineAsk);
+  const consumeLineAsk = useCaptionStore((state) => state.consumeLineAsk);
   const [pending, setPending] = useState(false);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -114,6 +116,27 @@ export function ChatPanel({ onOpenCatchUp }: ChatPanelProps) {
     inputRef.current?.focus();
     void ask({ promptKey: "custom", question }, question);
   };
+
+  // A tapped caption line arrives via the store; process it when not busy
+  // (a tap during a pending answer runs right after it finishes).
+  useEffect(() => {
+    if (!lineAsk || pending || !sessionActive) return;
+
+    consumeLineAsk();
+    const line = lineAsk.text.trim();
+    const echo = line.length > 140 ? `${line.slice(0, 140)}…` : line;
+    queueMicrotask(() => {
+      void ask(
+        {
+          promptKey: "line_context",
+          question: line.slice(0, ASK_QUESTION_MAX_LENGTH),
+        },
+        `What does this mean: "${echo}"`,
+      );
+    });
+    // ask is stable per render intent; lineAsk is consumed synchronously.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lineAsk, pending, sessionActive]);
 
   // Starter buttons fill the empty chat; once anything lands (even an auto
   // note) they collapse to the slim pill row above the composer.

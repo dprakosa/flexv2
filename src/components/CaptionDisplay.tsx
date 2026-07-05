@@ -4,29 +4,28 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ArrowDown } from "lucide-react";
 
-import { NowStrip } from "@/components/NowStrip";
 import { Button } from "@/components/ui/button";
 import { getDisplayText, formatTimestamp } from "@/lib/captions";
 import { cn } from "@/lib/utils";
 import { useCaptionStore } from "@/stores/captionStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 
-// Decisions and action items are marked with a labeled chip, not color
-// alone (WCAG 1.4.1); the caption text itself stays normal ink.
-function CaptionChip({ kind }: { kind: "decision" | "action" }) {
-  const colorVar =
-    kind === "decision" ? "var(--caption-decision)" : "var(--caption-action)";
-
+// Pairs each meaning color with its word so color is never the only cue.
+function CaptionLegend() {
   return (
-    <span
-      className="inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium"
-      style={{
-        color: colorVar,
-        backgroundColor: `color-mix(in oklab, ${colorVar} 12%, var(--card))`,
-      }}
+    <div
+      aria-hidden
+      className="flex items-center gap-3 text-xs text-muted-foreground"
     >
-      {kind === "decision" ? "✓ Decision" : "→ Action"}
-    </span>
+      <span className="flex items-center gap-1">
+        <span style={{ color: "var(--caption-decision)" }}>●</span>
+        Decision
+      </span>
+      <span className="flex items-center gap-1">
+        <span style={{ color: "var(--caption-action)" }}>●</span>
+        Action
+      </span>
+    </div>
   );
 }
 
@@ -34,9 +33,8 @@ export function CaptionDisplay() {
   const captions = useCaptionStore((state) => state.captions);
   const transcriptChunks = useCaptionStore((state) => state.transcriptChunks);
   const mode = useCaptionStore((state) => state.mode);
-  const playbackTimeSec = useCaptionStore((state) => state.playbackTimeSec);
+  const requestLineAsk = useCaptionStore((state) => state.requestLineAsk);
   const readingLevel = useSettingsStore((state) => state.readingLevel);
-  const captionDelaySec = useSettingsStore((state) => state.captionDelaySec);
   const reduceCognitiveLoad = useSettingsStore(
     (state) => state.reduceCognitiveLoad,
   );
@@ -45,19 +43,15 @@ export function CaptionDisplay() {
   const endRef = useRef<HTMLDivElement>(null);
   const [following, setFollowing] = useState(true);
 
-  const effectiveTime = Math.max(0, playbackTimeSec - captionDelaySec);
+  const sessionActive = mode !== "idle";
 
   const visibleCaptions = useMemo(() => {
-    const filtered = captions.filter(
-      (chunk) => chunk.timestamp <= effectiveTime,
-    );
-
-    if (reduceCognitiveLoad && filtered.length > 0) {
-      return filtered.slice(-2);
+    if (reduceCognitiveLoad && captions.length > 0) {
+      return captions.slice(-2);
     }
 
-    return filtered;
-  }, [captions, effectiveTime, reduceCognitiveLoad]);
+    return captions;
+  }, [captions, reduceCognitiveLoad]);
 
   // The newest in-progress (non-final) transcript chunk, shown as a muted
   // line; its id flips to a final caption on completion, so no duplication.
@@ -83,13 +77,11 @@ export function CaptionDisplay() {
       aria-label="Live captions"
       className="flex min-h-[45dvh] flex-1 flex-col rounded-2xl border bg-card p-5 text-card-foreground lg:min-h-0"
     >
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-sm font-medium uppercase tracking-wide opacity-80">
           Live captions
         </h2>
-        {captionDelaySec > 0 && (
-          <span className="text-sm opacity-80">{captionDelaySec}s delay</span>
-        )}
+        <CaptionLegend />
       </div>
 
       <div className="relative min-h-0 flex-1">
@@ -110,7 +102,7 @@ export function CaptionDisplay() {
             role="log"
             aria-live="polite"
             aria-relevant="additions"
-            className="space-y-4 text-xl"
+            className="space-y-3 text-xl"
           >
             {visibleCaptions.length === 0 && !partialChunk ? (
               <p className="text-base text-muted-foreground">
@@ -126,6 +118,11 @@ export function CaptionDisplay() {
                   reduceCognitiveLoad,
                 );
                 const isNewest = index === visibleCaptions.length - 1;
+                const meaningColor = chunk.isDecision
+                  ? "var(--caption-decision)"
+                  : chunk.isActionItem
+                    ? "var(--caption-action)"
+                    : undefined;
 
                 return (
                   <article
@@ -133,26 +130,46 @@ export function CaptionDisplay() {
                     className="grid grid-cols-[3.5rem_1fr] gap-x-2"
                   >
                     <time
-                      className="pt-1.5 text-xs tabular-nums text-muted-foreground"
+                      className="pt-2.5 text-xs tabular-nums text-muted-foreground"
                       dateTime={`PT${chunk.timestamp}S`}
                     >
                       {formatTimestamp(chunk.timestamp)}
                     </time>
-                    <div className="space-y-1">
-                      {chunk.isDecision ? (
-                        <CaptionChip kind="decision" />
-                      ) : chunk.isActionItem ? (
-                        <CaptionChip kind="action" />
-                      ) : null}
+                    <button
+                      type="button"
+                      disabled={!sessionActive}
+                      onClick={() => requestLineAsk(text, chunk.timestamp)}
+                      className="group/line -mx-2 rounded-lg px-2 py-1 text-left transition-colors outline-none hover:bg-muted focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/60"
+                    >
                       <p
                         className={cn(
-                          "leading-relaxed",
-                          isNewest ? "text-foreground" : "text-foreground/70",
+                          "leading-(--app-leading)",
+                          meaningColor && "font-semibold",
+                          !meaningColor &&
+                            (isNewest
+                              ? "text-foreground"
+                              : "text-foreground/70"),
                         )}
+                        style={meaningColor ? { color: meaningColor } : undefined}
                       >
+                        {chunk.isDecision && (
+                          <span className="sr-only">Decision: </span>
+                        )}
+                        {chunk.isActionItem && !chunk.isDecision && (
+                          <span className="sr-only">Action: </span>
+                        )}
                         {text}
+                        <span className="sr-only">
+                          , tap to ask what this means
+                        </span>
+                        <span
+                          aria-hidden
+                          className="ml-2 align-middle text-sm font-medium text-muted-foreground opacity-0 transition-opacity group-hover/line:opacity-100 group-focus-visible/line:opacity-100"
+                        >
+                          Ask →
+                        </span>
                       </p>
-                    </div>
+                    </button>
                   </article>
                 );
               })
@@ -160,7 +177,7 @@ export function CaptionDisplay() {
             {partialChunk && (
               <div className="grid grid-cols-[3.5rem_1fr] gap-x-2">
                 <span aria-hidden />
-                <p className="leading-relaxed text-muted-foreground">
+                <p className="px-2 py-1 leading-(--app-leading) text-muted-foreground">
                   {partialChunk.text}…
                 </p>
               </div>
@@ -180,8 +197,6 @@ export function CaptionDisplay() {
           </Button>
         )}
       </div>
-
-      <NowStrip />
     </section>
   );
 }

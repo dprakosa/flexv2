@@ -190,40 +190,24 @@ html[data-theme="high-contrast"] {
   --section-mention-tint: var(--card);
 }
 
-html[data-theme="dyslexia"] {
-  --background: #fdf6e3;
-  --foreground: #333333;
-  --card: #fffcf2;
-  --card-foreground: #333333;
-  --popover: #fffcf2;
-  --popover-foreground: #333333;
-  --primary: #40382a;
-  --primary-foreground: #fdf6e3;
-  --secondary: #f1e9d2;
-  --secondary-foreground: #333333;
-  --muted: #f1e9d2;
-  --muted-foreground: #55503f;
-  --accent: #f1e9d2;
-  --accent-foreground: #333333;
-  --border: #e3d9bc;
-  --input: #e3d9bc;
-  --ring: #a89e80;
-  --caption-decision: #4f55a7;
-  --caption-action: #56650a;
-  --section-tasks: #56650a;
-  --section-tasks-tint: color-mix(in oklab, #56650a 6%, var(--card));
-  --section-ask: #4f55a7;
-  --section-ask-tint: color-mix(in oklab, #4f55a7 6%, var(--card));
-  --section-thread: #0f766e;
-  --section-thread-tint: color-mix(in oklab, #0f766e 6%, var(--card));
-  --section-mention: #9d2153;
-  --section-mention-tint: color-mix(in oklab, #9d2153 6%, var(--card));
-}
-
-html[data-theme="dyslexia"] body {
+/* Font choice is independent of the color theme (set via data-font). */
+html[data-font="dyslexia"] body {
   font-family: OpenDyslexic, var(--font-geist-sans), system-ui, sans-serif;
   letter-spacing: 0.05em;
-  line-height: 1.7;
+}
+
+/* Line spacing for reading surfaces (captions, chat) — consumed via
+   leading-(--app-leading) so it wins over utility defaults. */
+:root {
+  --app-leading: 1.625;
+}
+
+html[data-line-spacing="relaxed"] {
+  --app-leading: 1.85;
+}
+
+html[data-line-spacing="loose"] {
+  --app-leading: 2.2;
 }
 
 /* App-wide text scaling; everything downstream is rem-based. */

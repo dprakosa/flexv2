@@ -39,7 +39,7 @@ function ChatMessageItem({
     case "user":
       return (
         <div className="flex justify-end">
-          <p className="max-w-[85%] rounded-xl rounded-br-sm bg-primary px-3 py-2 leading-relaxed text-primary-foreground">
+          <p className="max-w-[85%] rounded-xl rounded-br-sm bg-primary px-3 py-2 leading-(--app-leading) text-primary-foreground">
             {message.text}
           </p>
         </div>
@@ -47,9 +47,9 @@ function ChatMessageItem({
     case "answer":
       return (
         <div className="max-w-[95%] space-y-1.5">
-          <p className="leading-relaxed">{message.answer}</p>
+          <p className="leading-(--app-leading)">{message.answer}</p>
           {message.snippet && (
-            <p className="pl-3 leading-relaxed text-muted-foreground">
+            <p className="pl-3 leading-(--app-leading) text-muted-foreground">
               &ldquo;{stripQuotes(message.snippet)}&rdquo;
             </p>
           )}
@@ -91,11 +91,11 @@ function ChatMessageItem({
             </span>
           </p>
           {message.sourceText ? (
-            <p className="pl-3 leading-relaxed text-muted-foreground">
+            <p className="pl-3 leading-(--app-leading) text-muted-foreground">
               &ldquo;{stripQuotes(message.sourceText)}&rdquo;
             </p>
           ) : (
-            <p className="leading-relaxed">{message.signal.text}</p>
+            <p className="leading-(--app-leading)">{message.signal.text}</p>
           )}
         </div>
       );

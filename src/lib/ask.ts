@@ -13,6 +13,7 @@ export const ASK_PROMPT_KEYS: AskPromptKey[] = [
   "explain",
   "suggest_question",
   "custom",
+  "line_context",
 ];
 
 export const ASK_QUESTION_MAX_LENGTH = 300;
@@ -178,6 +179,19 @@ export function buildSampleAskAnswer(
             answer:
               "That hasn't come up in the last few minutes of the meeting.",
           };
+    }
+    case "line_context": {
+      const line = question?.trim();
+      if (!line) {
+        return {
+          answer:
+            "I couldn't find that line in the last few minutes of the meeting.",
+        };
+      }
+      return {
+        answer: `In plain terms: the group is working through this point right now. You could ask: "Could you say that more simply?"`,
+        snippet: line,
+      };
     }
   }
 }

@@ -1,10 +1,10 @@
 export type ReadingLevel = "original" | "grade8" | "grade6";
 
-export type ThemePreset =
-  | "calm-light"
-  | "calm-dark"
-  | "high-contrast"
-  | "dyslexia";
+export type ThemePreset = "calm-light" | "calm-dark" | "high-contrast";
+
+export type FontChoice = "default" | "dyslexia";
+
+export type LineSpacing = "normal" | "relaxed" | "loose";
 
 export type TextScale = "default" | "large" | "x-large";
 
@@ -27,13 +27,6 @@ export type TranscriptChunk = {
   isFinal: boolean;
 };
 
-export type CurrentThread = {
-  currentTopic?: string;
-  lastDecision?: string;
-  openQuestion?: string;
-  updatedAt?: number;
-};
-
 export type MeetingSignal = {
   type: "topic" | "decision" | "task" | "question" | "mention";
   text: string;
@@ -45,9 +38,10 @@ export type MeetingSignal = {
 export type UserAccessibilitySettings = {
   userName: string;
   themePreset: ThemePreset;
+  fontChoice: FontChoice;
+  lineSpacing: LineSpacing;
   textScale: TextScale;
   readingLevel: ReadingLevel;
-  captionDelaySec: number;
   reduceCognitiveLoad: boolean;
 };
 
@@ -92,7 +86,8 @@ export type AskPromptKey =
   | "tasks_for_me"
   | "explain"
   | "suggest_question"
-  | "custom";
+  | "custom"
+  | "line_context";
 
 export type AskRequest = {
   promptKey: AskPromptKey;

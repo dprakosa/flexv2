@@ -43,12 +43,12 @@ export async function POST(request: Request) {
     typeof body.userName === "string" ? body.userName.trim() : "";
 
   if (
-    body.promptKey === "custom" &&
+    (body.promptKey === "custom" || body.promptKey === "line_context") &&
     (!question || question.length > ASK_QUESTION_MAX_LENGTH)
   ) {
     return NextResponse.json(
       {
-        error: `question is required for custom asks (max ${ASK_QUESTION_MAX_LENGTH} chars)`,
+        error: `question is required for ${body.promptKey} asks (max ${ASK_QUESTION_MAX_LENGTH} chars)`,
       },
       { status: 400 },
     );

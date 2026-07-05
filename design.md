@@ -52,32 +52,33 @@ One window, two panes at desktop width (single stacked column below `lg`). Layou
 ┌────────────────────────────────────────────────────────────┐
 │  ● Listening      Catch-Up Companion         🧍  📌  ⋯      │  header (56px)
 ├────────────────────────────────────────────────────────────┤
-│  ┌──────────── live captions ───────────┐ ┌─ ask ─────────┐│
-│  │  (neutral hero, internal scroll)     │ │ flat chat:    ││
-│  │                                      │ │ ● auto notes  ││
-│  │  …caption lines, generous leading…   │ │ user bubbles  ││
-│  │                                      │ │ plain answers ││
-│  │ ┌─ NOW strip (teal highlight) ─────┐ │ │ + quotes      ││
-│  │ │ NOW / DECIDED / OPEN, only when  │ │ │               ││
-│  │ │ detected; hides when empty       │ │ │ (3 pills)     ││
-│  │ └──────────────────────────────────┘ │ │ [composer] [➤]││
-│  └──────────────────────────────────────┘ └───────────────┘│
+│  ┌──── live captions  ● Decision ● Action ┐ ┌─ ask ───────┐│
+│  │  (neutral hero, internal scroll)       │ │ flat chat:  ││
+│  │  0:42  colored+bold decision line      │ │ ● auto notes││
+│  │  1:20  normal line          Ask →      │ │ user bubbles││
+│  │  1:35  colored+bold action line        │ │ plain       ││
+│  │                                        │ │ answers     ││
+│  │  every line tappable → explanation     │ │ + quotes    ││
+│  │  lands in the chat        (↓ Latest)   │ │ (3 pills)   ││
+│  │                                        │ │ [composer]➤ ││
+│  └────────────────────────────────────────┘ └─────────────┘│
 │           ╭────────────────╮                               │
 │           │ ✦ Catch me up  │  floating bar, bottom-6       │
 │           ╰────────────────╯                               │
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Section color identity** — color appears as quiet accents (small-caps labels, the NOW strip's left border + tint), never as boxes around chat content. Accents are AA-safe darkened takes on the Clay brand hues. Color is never the only differentiator (label text + timestamps always present). AA-checked per theme:
+**Section color identity** — color appears as quiet accents (small-caps labels, colored meaning lines), never as boxes around content. Accents are AA-safe darkened takes on the Clay brand hues. Color is never the only differentiator: meaning lines are also **semibold** and decoded by the `● Decision ● Action` legend in the captions header (plus sr-only prefixes); auto notes always carry label text + timestamps. AA-checked per theme (3 themes — the dyslexia *font* is now a separate setting):
 
-| Accent | calm-light | calm-dark | high-contrast | dyslexia |
-|---|---|---|---|---|
-| NOW strip (teal/mint) | `#1a3a3a` | `#a4d4c5` | `#5eead4` | `#0f766e` |
-| Ask heading (lavender) | `#5b46b4` | `#b8a4ed` | `#c4b5fd` | `#4f55a7` |
-| Auto notes: tasks/questions (ochre) | `#8a6612` | `#e8b94a` | `#00e676` | `#56650a` |
-| Auto notes: mentions (pink) | `#c2185b` | `#ff7fae` | `#ff9df2` | `#9d2153` |
+| Accent | calm-light | calm-dark | high-contrast |
+|---|---|---|---|
+| Caption: decision (lavender) | `#5b46b4` | `#b8a4ed` | `#ff9df2` |
+| Caption: action (green) | `#0f6a4e` | `#a4d4c5` | `#00e676` |
+| Ask heading (lavender) | `#5b46b4` | `#b8a4ed` | `#c4b5fd` |
+| Auto notes: tasks/questions (ochre) | `#8a6612` | `#e8b94a` | `#00e676` |
+| Auto notes: mentions (pink) | `#c2185b` | `#ff7fae` | `#ff9df2` |
 
-Live captions stay neutral; the **NOW strip** (`NowStrip.tsx`) docks at the bottom of the captions pane — up to three labeled lines (NOW / DECIDED / OPEN) that render only when the heuristic detects something, hiding entirely otherwise. The right pane is the **Ask the meeting** chat alone, a flat `bg-card` surface. On mobile the captions column (strip included) stacks before the chat, which keeps a `55dvh` floor. The demo summary paragraph has no UI (the `summary` store field remains for future `/api/summary` wiring).
+Meaning lives **in** the transcript: decision/action lines render in color + semibold (heuristically tagged for live sessions via `tagCaptionChunk` in `lib/captions.ts`; demo flags pass through). **Every caption line is tappable** — hover/focus shows a wash + "Ask →", and the tap sends the line to the chat (`line_context` prompt) for a plain-language explanation with context, tone, and a suggested follow-up. The right pane is the **Ask the meeting** chat alone, a flat `bg-card` surface. On mobile the captions column stacks before the chat, which keeps a `55dvh` floor. The demo summary paragraph has no UI (the `summary` store field remains for future `/api/summary` wiring).
 
 ### Header
 - Left: status — pulsing green dot + "Listening" while capturing; "Demo" badge in demo mode; nothing when idle.
@@ -85,13 +86,13 @@ Live captions stay neutral; the **NOW strip** (`NowStrip.tsx`) docks at the bott
 - Right: the **hero pill** plus utilities:
   - Idle → `[ 🖥 Start listening ]` — primary, size `xl`, the only prominent control on screen.
   - Capturing → same pill becomes `[ ■ Stop ]` (destructive variant).
-  - `🧍` accessibility icon → right-side **Accessibility** sheet: your name (for mention detection), app-wide theme (calm light / calm dark / high contrast / dyslexia-friendly), text size, caption comfort controls. Nothing else lives here — it exists to demonstrate accessibility support.
+  - `🧍` accessibility icon → right-side **Accessibility** sheet, decomposed like standard website a11y tooling into **You** (name for mention detection), **Display** (Color theme: calm light / calm dark / high contrast · Font: standard / dyslexia-friendly · Text size · Line spacing) and **Captions** (reading level, calmer captions). Font and color are independent controls; there is no caption-delay setting.
   - `📌` pin icon (desktop only) → always-on-top toggle, tooltip "Keep on top".
   - `⋯` overflow menu → Use microphone only (PDD's mic-first path), Demo mode, Upload recording.
 
 ### Main grid
 - Max width `72rem`, centered; `lg` two columns (`1fr / 360–420px` rail), stacked below.
-- Left: the captions hero (neutral, internal scroll) with the **NOW strip** docked at its bottom.
+- Left: the captions hero (neutral, internal scroll) with tappable, meaning-colored lines.
 - Right rail: the **Ask the meeting** chat panel alone (`flex-1`, internal scroll, composer pinned at the bottom).
 - Bottom padding clears the floating bar; on mobile the page scrolls and captions keep a `45dvh` floor.
 
@@ -143,17 +144,17 @@ The recovery moment — it must feel instant and structured.
 |---|---|
 | Radius | Pills (`rounded-full`) for actions/chips; `rounded-2xl` for surfaces; base `--radius` = 0.75rem (Clay: 12px buttons/inputs, ~17px cards, ~22px panels) |
 | Palette | Clay (getdesign.md/clay): cream canvas `#fffaf0`, **white panels `#ffffff`** for clear plane separation, ink `#0a0a0a` primary, warm hairline `#ddd6c6`, secondary text `#525252` (≈7.5:1); accents teal/lavender/ochre/pink (AA per theme). calm-dark = Clay-dark: teal-tinted near-black `#0a1a1a`/`#16282a`, cream ink `#f5f0e0`, pastel accents, borders at 20% white. high-contrast/dyslexia keep their accessibility palettes |
-| Buttons | `xl` (h-12, rounded-full, px-6, text-base) and `icon-xl` sizes in `ui/button.tsx`; suggestion chips = `outline sm rounded-full` |
+| Buttons | Large touch targets (WCAG 2.5.8-friendly): `default` h-10, `sm` h-9, `lg` h-11, `xl` h-12 pill; icons `size-10`+; inputs/selects h-10. Quick-ask pills = `outline sm rounded-full` |
 | Icons | lucide-react, 20px in `xl` buttons: `ScreenShare`, `Square`, `Sparkles`, `Pin`, `Settings2`, `X`, `Send`, `ArrowDown` |
 | Depth | Hairline borders + tinted washes; no glassmorphism, no blur, no heavy shadows (Clay: depth from color contrast, not elevation) |
 | Motion | `tw-animate-css` / Radix data-state only — fades and gentle slide for dialog/sheet; pulsing dot; no framer-motion |
-| Type | Existing Geist sans (Inter-class, close to Clay's stack); captions get relaxed line-height; **no italics anywhere** (dyslexia/cognitive readability); no new fonts |
+| Type | Existing Geist sans (Inter-class, close to Clay's stack); OpenDyslexic available via the Font setting (`data-font`); reading surfaces use `leading-(--app-leading)` driven by the Line-spacing setting (`data-line-spacing`); **no italics anywhere** (dyslexia/cognitive readability) |
 
 ## 6. Interaction details
 
 - **One-click start**: `Start listening` → main process auto-selects the primary screen; no source picker (X11; Wayland may show a one-time system consent).
 - **Keyboard**: **C** opens Catch me up in-app; `Ctrl/Cmd+Shift+L` (global, works unfocused) also opens it on desktop. Dialog inherits Radix focus handling; all controls reachable by tab.
-- **Live captions behavior**: auto-follow the newest line; scrolling up pauses following and shows a `↓ Latest` pill to jump back. Timestamps sit in a fixed left gutter (small, tabular). Decision/action lines carry a labeled chip (`✓ Decision` / `→ Action`) — never color alone. The newest caption renders full-strength; older lines are slightly quieter (still ≥4.5:1).
+- **Live captions behavior**: auto-follow the newest line; scrolling up pauses following and shows a `↓ Latest` pill to jump back. Timestamps sit in a fixed left gutter (small, tabular). Decision/action lines render in color + semibold, decoded by the header legend and sr-only prefixes — never color alone. The newest neutral caption renders full-strength; older lines are slightly quieter (still ≥4.5:1). **Tap any line** (click/tap/Enter — hover/focus reveals "Ask →") to get a plain-language explanation of it in the chat via the `line_context` prompt (meaning, context, tone, one follow-up question).
 - **Graceful degradation** (web): picker appears on start; pin/shortcut/settings-desktop rows hidden; everything else identical.
 - **No-audio hint** (Linux): small muted badge near the status dot — "Screen only, no system audio" — informative, not alarming.
 - **Stop** always fully tears down: stream tracks, session clock, transcript state.

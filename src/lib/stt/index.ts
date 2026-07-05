@@ -1,5 +1,8 @@
 // OpenAI Realtime transcription — client-safe types, constants, and helpers.
 
+// Streaming model: emits partial deltas so the in-progress caption line
+// renders while someone speaks. (whisper-1 would only send completed
+// segments — text lands in a lump after each pause.)
 export const DEFAULT_TRANSCRIBE_MODEL = "gpt-4o-mini-transcribe";
 export const DEFAULT_TRANSCRIBE_LANGUAGE = "en";
 

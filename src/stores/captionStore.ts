@@ -3,16 +3,12 @@
 import { create } from "zustand";
 
 import { announce } from "@/components/StatusAnnouncer";
-import { formatTimestamp } from "@/lib/captions";
+import { formatTimestamp, tagCaptionChunk } from "@/lib/captions";
 import {
   deriveMeetingSignals,
   getSignalLabel,
   meetingSignalsEqual,
 } from "@/lib/meeting-signals";
-import {
-  currentThreadsEqual,
-  deriveCurrentThread,
-} from "@/lib/current-thread";
 import {
   formatTranscriptForPrompt,
   getTranscriptChunksForWindow,
@@ -24,22 +20,12 @@ import {
 import type {
   CaptionChunk,
   ChatMessage,
-  CurrentThread,
   MeetingMode,
   MeetingSignal,
   MeetingSummary,
   TranscriptChunk,
 } from "@/types";
 import { useSettingsStore } from "@/stores/settingsStore";
-
-function refreshCurrentThreadState(
-  transcriptChunks: TranscriptChunk[],
-  playbackTimeSec: number,
-  currentThread: CurrentThread,
-): CurrentThread {
-  const next = deriveCurrentThread(transcriptChunks, playbackTimeSec);
-  return currentThreadsEqual(currentThread, next) ? currentThread : next;
-}
 
 function refreshMeetingSignalsState(
   transcriptChunks: TranscriptChunk[],
@@ -116,7 +102,7 @@ function collectProactiveChatState(
 
 type DerivedMeetingState = Pick<
   CaptionState,
-  "currentThread" | "meetingSignals" | "chatMessages" | "postedSignalKeys"
+  "meetingSignals" | "chatMessages" | "postedSignalKeys"
 >;
 
 function refreshDerivedMeetingState(
@@ -131,11 +117,6 @@ function refreshDerivedMeetingState(
   );
 
   return {
-    currentThread: refreshCurrentThreadState(
-      transcriptChunks,
-      playbackTimeSec,
-      state.currentThread,
-    ),
     meetingSignals,
     ...collectProactiveChatState(
       meetingSignals,
@@ -147,16 +128,18 @@ function refreshDerivedMeetingState(
   };
 }
 
+type LineAsk = { text: string; timestamp: number; nonce: number };
+
 type CaptionState = {
   mode: MeetingMode;
   isCapturing: boolean;
   isDemoMode: boolean;
   captions: CaptionChunk[];
   transcriptChunks: TranscriptChunk[];
-  currentThread: CurrentThread;
   meetingSignals: MeetingSignal[];
   chatMessages: ChatMessage[];
   postedSignalKeys: Record<string, true>;
+  lineAsk: LineAsk | null;
   summary: MeetingSummary | null;
   playbackTimeSec: number;
   sessionStartedAtMs: number | null;
@@ -177,6 +160,8 @@ type CaptionState = {
   ) => string;
   refreshMeetingSignals: () => void;
   appendChatMessage: (message: ChatMessage) => void;
+  requestLineAsk: (text: string, timestamp: number) => void;
+  consumeLineAsk: () => void;
   setSummary: (summary: MeetingSummary | null) => void;
   setPlaybackTimeSec: (playbackTimeSec: number) => void;
   setSessionStartedAtMs: (sessionStartedAtMs: number | null) => void;
@@ -189,10 +174,10 @@ const INITIAL_STATE = {
   isDemoMode: false,
   captions: [] as CaptionChunk[],
   transcriptChunks: [] as TranscriptChunk[],
-  currentThread: {} as CurrentThread,
   meetingSignals: [] as MeetingSignal[],
   chatMessages: [] as ChatMessage[],
   postedSignalKeys: {} as Record<string, true>,
+  lineAsk: null as LineAsk | null,
   summary: null as MeetingSummary | null,
   playbackTimeSec: 0,
   sessionStartedAtMs: null as number | null,
@@ -203,8 +188,9 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
   setMode: (mode) => set({ mode }),
   setIsCapturing: (isCapturing) => set({ isCapturing }),
   setIsDemoMode: (isDemoMode) => set({ isDemoMode }),
-  addCaption: (chunk) =>
+  addCaption: (incoming) =>
     set((state) => {
+      const chunk = tagCaptionChunk(incoming);
       const transcriptChunks = reconcileTranscriptChunk(
         state.transcriptChunks,
         {
@@ -230,8 +216,9 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
         ),
       };
     }),
-  setCaptions: (captions) =>
+  setCaptions: (incoming) =>
     set((state) => {
+      const captions = incoming.map(tagCaptionChunk);
       const nextTranscriptChunks = pruneTranscriptChunks(
         transcriptChunksFromCaptions(captions),
         state.playbackTimeSec,
@@ -324,6 +311,13 @@ export const useCaptionStore = create<CaptionState>((set, get) => ({
     set((state) => ({
       chatMessages: trimChatMessages([...state.chatMessages, message]),
     })),
+  // Bridge from a tapped caption line to the chat panel; nonce lets the
+  // same line re-fire. ChatPanel consumes it when it isn't busy.
+  requestLineAsk: (text, timestamp) =>
+    set((state) => ({
+      lineAsk: { text, timestamp, nonce: (state.lineAsk?.nonce ?? 0) + 1 },
+    })),
+  consumeLineAsk: () => set({ lineAsk: null }),
   setSummary: (summary) => set({ summary }),
   setPlaybackTimeSec: (playbackTimeSec) =>
     set((state) => {
