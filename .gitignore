@@ -27,6 +27,9 @@
 # playwright mcp session artifacts
 /.playwright-mcp
 
+# agentic workflow scratch (problem-definition, planning, etc.)
+/.building
+
 # misc
 .DS_Store
 *.pem

@@ -5,6 +5,14 @@ import type { TranscriptChunk, VisualContextResult } from "@/types";
 // Minimum chars a topic needs before it's worth a search call at all.
 export const MIN_TOPIC_CHARS_FOR_SEARCH = 16;
 
+// How many SerpAPI results to fetch and score with CLIP before picking one.
+export const SEARCH_CANDIDATE_COUNT = 6;
+
+// Minimum CLIP cosine similarity for the top-ranked candidate to actually be
+// shown. Below this, nothing is shown rather than a low-confidence guess.
+// TODO(calibration): starting value, tune against real query/image pairs.
+export const CLIP_MIN_SIMILARITY = 0.24;
+
 // How far back to look for a topic candidate. current-thread.ts used the
 // same window before it was removed in the chat-panel redesign; this
 // widget derives its own lightweight topic locally instead of depending
